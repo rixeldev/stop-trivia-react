@@ -105,7 +105,6 @@ The app is available on [Google Play Store](https://play.google.com/store/apps/d
 
 All commands are run from the root of the project, from a terminal:
 
-|----------------------------------------------------------------------------------------------------|
 | Command                         | Action                                                           |
 | :------------------------------ | :----------------------------------------------------------------|
 | `pnpm install`                  | Installs all dependencies                                        |
@@ -120,4 +119,3 @@ All commands are run from the root of the project, from a terminal:
 | `cd tests/e2e && npm test`      | Runs comprehensive E2E tests                                     |
 | `cd tests/e2e && npm run test:ios` | Runs E2E tests on iOS simulator                               |
 | `cd tests/e2e && npm run test:android` | Runs E2E tests on Android emulator                        |
-|----------------------------------------------------------------------------------------------------|

@@ -240,7 +240,7 @@ export default function Settings() {
           headerTintColor: Theme.colors.text,
           headerTitle: t("settings"),
           headerTitleStyle: {
-            fontSize: 24,
+            fontSize: Theme.sizes.h0,
             fontFamily: Theme.fonts.onest,
           },
           headerLeft: () => (
@@ -324,7 +324,7 @@ export default function Settings() {
             style={{
               color: Theme.colors.accent,
               fontFamily: Theme.fonts.onestBold,
-              fontSize: 24,
+              fontSize: Theme.sizes.h0,
             }}
           >
             {userName ?? "Stop Test"}
@@ -334,7 +334,7 @@ export default function Settings() {
             style={{
               color: Theme.colors.gray,
               fontFamily: Theme.fonts.onest,
-              fontSize: 12,
+              fontSize: Theme.sizes.h6,
             }}
           >
             {userEmail}
@@ -352,7 +352,7 @@ export default function Settings() {
               style={{
                 color: Theme.colors.darkGray,
                 fontFamily: Theme.fonts.onest,
-                fontSize: 12,
+                fontSize: Theme.sizes.h6,
               }}
             >
               {userId}
@@ -496,7 +496,7 @@ export default function Settings() {
               width: "100%",
               color: Theme.colors.darkGray,
               fontFamily: Theme.fonts.onest,
-              fontSize: 14,
+              fontSize: Theme.sizes.h5,
             }}
           >
             Stop Trivia
@@ -508,7 +508,7 @@ export default function Settings() {
               width: "100%",
               color: Theme.colors.darkGray,
               fontFamily: Theme.fonts.onest,
-              fontSize: 12,
+              fontSize: Theme.sizes.h6,
             }}
           >
             {appVersion}
@@ -581,11 +581,11 @@ const styles = StyleSheet.create({
     backgroundColor: Theme.colors.primary,
   },
   optionText: {
-    fontSize: 16,
+    fontSize: Theme.sizes.h4,
     color: Theme.colors.text,
   },
   optionSubText: {
-    fontSize: 12,
+    fontSize: Theme.sizes.h6,
     color: Theme.colors.gray,
   },
 })

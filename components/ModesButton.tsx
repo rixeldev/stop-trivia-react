@@ -101,7 +101,7 @@ export const ModesButton = ({
               <Text
                 style={{
                   color: Theme.colors.text,
-                  fontSize: 20,
+                  fontSize: Theme.sizes.h2,
                   fontFamily: Theme.fonts.onestBold,
                 }}
               >
@@ -112,7 +112,7 @@ export const ModesButton = ({
                 <Text
                   style={{
                     color: Theme.colors.gray,
-                    fontSize: 14,
+                    fontSize: Theme.sizes.h5,
                     fontFamily: Theme.fonts.onest,
                   }}
                 >

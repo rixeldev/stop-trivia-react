@@ -195,7 +195,7 @@ export default function Index() {
                   style={{
                     color: Theme.colors.accent,
                     fontFamily: Theme.fonts.onestBold,
-                    fontSize: 18,
+                    fontSize: Theme.sizes.h3,
                     alignSelf: "center",
                     marginBottom: 16,
                   }}
@@ -270,7 +270,7 @@ export default function Index() {
           <Text
             style={{
               color: Theme.colors.text,
-              fontSize: 18,
+              fontSize: Theme.sizes.h3,
               fontFamily: Theme.fonts.onest,
             }}
           >
@@ -348,7 +348,7 @@ export default function Index() {
                 style={{
                   color: Theme.colors.red,
                   fontFamily: Theme.fonts.onest,
-                  fontSize: 14,
+                  fontSize: Theme.sizes.h5,
                 }}
               >
                 {error}

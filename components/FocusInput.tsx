@@ -82,6 +82,6 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     color: Theme.colors.text,
     fontFamily: Theme.fonts.onest,
-    fontSize: 16,
+    fontSize: Theme.sizes.h4,
   },
 })

@@ -35,7 +35,7 @@ export const Updaloading = ({
             style={{
               color: Theme.colors.gray,
               fontFamily: Theme.fonts.onestBold,
-              fontSize: 18,
+              fontSize: Theme.sizes.h3,
               alignSelf: "center",
               marginBottom: 16,
             }}

@@ -523,7 +523,7 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     color: Theme.colors.text,
-    fontSize: 16,
+    fontSize: Theme.sizes.h4,
     fontFamily: Theme.fonts.onest,
   },
   row: {
@@ -554,7 +554,7 @@ const styles = StyleSheet.create({
   },
   submitText: {
     color: Theme.colors.text,
-    fontSize: 16,
+    fontSize: Theme.sizes.h4,
     fontFamily: Theme.fonts.onestBold,
   },
   orRow: {
@@ -622,7 +622,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   googleText: {
-    fontSize: 20,
+    fontSize: Theme.sizes.h2,
     fontFamily: Theme.fonts.onestBold,
   },
 })

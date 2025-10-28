@@ -34,7 +34,7 @@ export const CustomModal = ({
               style={{
                 color: Theme.colors.accent,
                 fontFamily: Theme.fonts.onestBold,
-                fontSize: 18,
+                fontSize: Theme.sizes.h3,
               }}
             >
               {title}

@@ -68,7 +68,7 @@ export const TabBarButton = ({
           {
             color: color,
             textAlign: "center",
-            fontSize: 12,
+            fontSize: Theme.sizes.h6,
             fontFamily: Theme.fonts.onest,
           },
           animatedTextStyle,

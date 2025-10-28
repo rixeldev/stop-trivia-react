@@ -37,7 +37,7 @@ export const PlayerInputsInfoModal = ({
                 style={{
                   color: Theme.colors.accent,
                   fontFamily: Theme.fonts.onestBold,
-                  fontSize: 18,
+                  fontSize: Theme.sizes.h3,
                   alignSelf: "center",
                   marginBottom: 16,
                 }}

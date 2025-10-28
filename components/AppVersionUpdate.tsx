@@ -62,13 +62,13 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   title: {
-    fontSize: 22,
+    fontSize: Theme.sizes.h1,
     fontFamily: Theme.fonts.onestBold,
     color: Theme.colors.text,
     marginBottom: 12,
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: Theme.sizes.h4,
     fontFamily: Theme.fonts.onest,
     color: Theme.colors.gray,
     textAlign: "center",
@@ -76,7 +76,7 @@ const styles = StyleSheet.create({
     marginBottom: 32,
   },
   hint: {
-    fontSize: 14,
+    fontSize: Theme.sizes.h5,
     color: Theme.colors.gray,
     fontFamily: Theme.fonts.onest,
   },
@@ -93,7 +93,7 @@ const styles = StyleSheet.create({
   },
   submitText: {
     color: Theme.colors.text,
-    fontSize: 16,
+    fontSize: Theme.sizes.h4,
     fontFamily: Theme.fonts.onestBold,
   },
 })

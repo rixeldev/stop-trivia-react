@@ -417,7 +417,7 @@ export default function TTT() {
             headerTintColor: Theme.colors.text,
             headerTitle: "",
             headerTitleStyle: {
-              fontSize: 24,
+              fontSize: Theme.sizes.h0,
               fontFamily: Theme.fonts.onestBold,
             },
             headerTitleAlign: "center",
@@ -453,7 +453,7 @@ export default function TTT() {
             style={{
               color: Theme.colors.accent,
               fontFamily: Theme.fonts.onestBold,
-              fontSize: 24,
+              fontSize: Theme.sizes.h0,
             }}
           >
             {t("you_are_offline")}
@@ -472,7 +472,7 @@ export default function TTT() {
           headerTintColor: Theme.colors.text,
           headerTitle: title ?? "Tic Tac Toe",
           headerTitleStyle: {
-            fontSize: 24,
+            fontSize: Theme.sizes.h0,
             fontFamily: Theme.fonts.onestBold,
           },
           headerTitleAlign: "center",
@@ -516,7 +516,7 @@ export default function TTT() {
           style={{
             color: Theme.colors.gray,
             fontFamily: Theme.fonts.onest,
-            fontSize: 18,
+            fontSize: Theme.sizes.h3,
           }}
         >
           {isPlayerTurn ? "X" : "O"} Turn
@@ -668,7 +668,7 @@ export default function TTT() {
               style={{
                 color: Theme.colors.accent,
                 fontFamily: Theme.fonts.onest,
-                fontSize: 16,
+                fontSize: Theme.sizes.h4,
               }}
             >
               {gameData?.gameId.toUpperCase()}
@@ -727,7 +727,7 @@ export default function TTT() {
                       flex: 1,
                       color: Theme.colors.gray,
                       fontFamily: Theme.fonts.onestBold,
-                      fontSize: 18,
+                      fontSize: Theme.sizes.h3,
                       textAlign: "left",
                     }}
                   >
@@ -737,7 +737,7 @@ export default function TTT() {
                     style={{
                       color: Theme.colors.gray,
                       fontFamily: Theme.fonts.onest,
-                      fontSize: 18,
+                      fontSize: Theme.sizes.h3,
                     }}
                   >
                     {player.points}

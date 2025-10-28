@@ -208,7 +208,7 @@ export default function TicTacToe() {
           <Text
             style={{
               color: Theme.colors.text,
-              fontSize: 18,
+              fontSize: Theme.sizes.h3,
               fontFamily: Theme.fonts.onest,
             }}
           >
@@ -286,7 +286,7 @@ export default function TicTacToe() {
                 style={{
                   color: Theme.colors.red,
                   fontFamily: Theme.fonts.onest,
-                  fontSize: 14,
+                  fontSize: Theme.sizes.h5,
                 }}
               >
                 {error}

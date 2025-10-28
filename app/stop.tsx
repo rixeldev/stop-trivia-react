@@ -625,7 +625,7 @@ export default function Stop() {
             headerTintColor: Theme.colors.text,
             headerTitle: "",
             headerTitleStyle: {
-              fontSize: 24,
+              fontSize: Theme.sizes.h0,
               fontFamily: Theme.fonts.onestBold,
             },
             headerTitleAlign: "center",
@@ -661,7 +661,7 @@ export default function Stop() {
             style={{
               color: Theme.colors.accent,
               fontFamily: Theme.fonts.onestBold,
-              fontSize: 24,
+              fontSize: Theme.sizes.h0,
             }}
           >
             {t("you_are_offline")}
@@ -680,7 +680,7 @@ export default function Stop() {
           headerTintColor: Theme.colors.text,
           headerTitle: title ?? "Stop Trivia",
           headerTitleStyle: {
-            fontSize: 24,
+            fontSize: Theme.sizes.h0,
             fontFamily: Theme.fonts.onestBold,
           },
           headerTitleAlign: "center",
@@ -740,7 +740,7 @@ export default function Stop() {
                 style={{
                   color: timerColor,
                   fontFamily: Theme.fonts.onest,
-                  fontSize: 18,
+                  fontSize: Theme.sizes.h3,
                   transform: [{ scale: scaleAnim }],
                 }}
               >
@@ -1050,7 +1050,7 @@ export default function Stop() {
               style={{
                 color: Theme.colors.accent,
                 fontFamily: Theme.fonts.onest,
-                fontSize: 16,
+                fontSize: Theme.sizes.h4,
               }}
             >
               {gameData?.gameId.toUpperCase()}
@@ -1110,7 +1110,7 @@ export default function Stop() {
                       flex: 1,
                       color: Theme.colors.gray,
                       fontFamily: Theme.fonts.onestBold,
-                      fontSize: 18,
+                      fontSize: Theme.sizes.h3,
                       textAlign: "left",
                     }}
                   >
@@ -1120,7 +1120,7 @@ export default function Stop() {
                     style={{
                       color: Theme.colors.gray,
                       fontFamily: Theme.fonts.onest,
-                      fontSize: 18,
+                      fontSize: Theme.sizes.h3,
                     }}
                   >
                     {player.points}

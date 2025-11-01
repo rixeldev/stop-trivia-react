@@ -23,6 +23,8 @@ import {
   FirebaseAuthTypes,
   onAuthStateChanged,
 } from "@react-native-firebase/auth"
+import { Onboarding } from "@/components/Onboarding"
+import { parseBoolean } from "@/libs/parseBoolean"
 
 export default function Layout() {
   const [isAppReady, setIsAppReady] = useState(false)
@@ -30,6 +32,7 @@ export default function Layout() {
   const [initializing, setInitializing] = useState(true)
   const [user, setUser] = useState<FirebaseAuthTypes.User | null>(null)
   const [loading, setLoading] = useState<boolean>(true)
+  const [firstTime, setFirstTime] = useState<boolean | null>(null)
 
   const { i18n } = useTranslation()
   const { getItem, setItem } = useStorage()
@@ -44,11 +47,19 @@ export default function Layout() {
 
     const loadSettings = async () => {
       const locales = RNLocalize.getLocales()
+      const localeCode = locales?.[0]?.languageCode === "es" ? "es" : "en"
       const vibration = await getItem("vibration")
       const languageCode = await getItem("language")
+      const firstTimeStorage = await getItem("first_time")
 
-      if (!vibration) setItem("vibration", String(true))
-      i18n.changeLanguage(languageCode ?? locales[0].languageCode)
+      if (firstTimeStorage === null) {
+        setFirstTime(true)
+      } else {
+        setFirstTime(parseBoolean(firstTimeStorage) === false ? false : true)
+      }
+
+      if (!vibration) await setItem("vibration", String(true))
+      i18n.changeLanguage(languageCode ?? localeCode)
 
       // Initialize Mobile Ads for child-directed treatment and under age of consent
       await mobileAds().setRequestConfiguration({
@@ -88,6 +99,11 @@ export default function Layout() {
     OnestBold: require("../assets/fonts/onest-latin-800-normal.ttf"),
   })
 
+  const handleOnboardingOnDone = async () => {
+    await setItem("first_time", "false")
+    setFirstTime(false)
+  }
+
   if (!loaded || !isAppReady) {
     return (
       <SplashScreen
@@ -98,6 +114,10 @@ export default function Layout() {
 
   if (user && !isAppUpdated && loaded && isAppReady && !loading) {
     return <AppVersionUpdate />
+  }
+
+  if (firstTime) {
+    return <Onboarding onDone={handleOnboardingOnDone} />
   }
 
   return (
@@ -129,7 +149,7 @@ export default function Layout() {
                 headerTintColor: Theme.colors.text,
                 headerTitle: "Stop Trivia",
                 headerTitleStyle: {
-                  fontSize: 24,
+                  fontSize: Theme.sizes.h0,
                   fontFamily: Theme.fonts.onestBold,
                 },
                 headerLeft: () => (

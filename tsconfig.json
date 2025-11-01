@@ -16,6 +16,6 @@
       "@/functions": ["/functions/*"],
       "@/constants": ["/constants/*"],
       "@firebase/auth": ["./node_modules/@firebase/auth/dist/index.rn.d.ts"]
-    }
-  }
+    },
+  },
 }

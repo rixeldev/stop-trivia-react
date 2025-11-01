@@ -8,7 +8,7 @@
 
 ## 📃 Description →
 
-This repository have the Stop Trivia Online's game code, [React Native](https://reactnative.dev/) with [Expo](https://expo.dev), [Firebase](https://firebase.google.com), and upload to the [Google Play Store](https://play.google.com/store/apps/details?id=com.rilisentertainment.stoptriviaonline).
+This repository have the Stop Trivia Online's game code, build using [React Native](https://reactnative.dev/) with [Expo](https://expo.dev), [Firebase](https://firebase.google.com), and upload to the [Google Play Store](https://play.google.com/store/apps/details?id=com.rilisentertainment.stoptriviaonline).
 
 
 This game was primarily built in Kotlin. However, for performance and development platform reasons, it moved to [React Native](https://reactnative.dev/) with [Expo](https://expo.dev).

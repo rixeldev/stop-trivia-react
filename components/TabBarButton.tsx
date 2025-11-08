@@ -59,7 +59,7 @@ export const TabBarButton = ({
       style={styles.tabbarItem}
     >
       <Animated.View style={animatedIconStyle}>
-        {icon[routeName]({
+        {icon[routeName as keyof typeof icon]({
           color: color,
         })}
       </Animated.View>

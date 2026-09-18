@@ -11,6 +11,8 @@ export interface StopModel {
   host: string
   startTime: number
   timestamp: number
+  scoring?: Record<string, boolean> | null
+  scoredRound?: number | null
 }
 
 export interface TTTModel {

@@ -44,6 +44,7 @@ export const PlayerInputsInfoModal = ({
       transparent
       visible={modalVisible}
       onRequestClose={onRequestClose}
+      collapsable={true}
     >
       <TouchableWithoutFeedback onPress={onRequestClose}>
         <View style={styles.centeredView}>

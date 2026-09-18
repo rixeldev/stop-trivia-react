@@ -12,6 +12,7 @@ import {
 import { StopModel, GameStatus, TTTModel } from "@/interfaces/Game"
 import { StopPlayer, TTTPlayer } from "@/interfaces/Player"
 import { StopGameInputs } from "@/interfaces/StopGameInputs"
+import { computeStopRoundPoints } from "@/libs/scoring"
 
 const db = getFirestore()
 
@@ -130,6 +131,53 @@ class Fire {
   deleteGame = async (collectionName: string, id: string) => {
     const docRef = doc(db, collectionName, id)
     await deleteDoc(docRef)
+  }
+
+  submitChoice = async (
+    gameId: string,
+    userId: string,
+    sameWords: boolean
+  ) => {
+    const gameRef = doc(db, "stop", gameId)
+    await updateDoc(gameRef, {
+      [`scoring.${userId}`]: sameWords,
+    })
+  }
+
+  clearScoring = async (gameId: string) => {
+    const gameRef = doc(db, "stop", gameId)
+    await updateDoc(gameRef, { scoring: {} })
+  }
+
+  scoreRound = async (gameId: string): Promise<void> => {
+    const gameRef = doc(db, "stop", gameId)
+    await runTransaction(db, async (tx) => {
+      const snap = await tx.get(gameRef)
+      if (!snap.exists()) return
+      const data = snap.data() as StopModel
+      const scoreData = data.scoring
+      if (!scoreData || data.scoredRound === data.round) return
+
+      const allSubmitted =
+        data.players.length > 0 &&
+        data.players.every(
+          (player) => player.id && scoreData[player.id] !== undefined
+        )
+      if (!allSubmitted) return
+
+      const pointMap = computeStopRoundPoints(data.players, scoreData)
+      const players = data.players.map((player) =>
+        player.id
+          ? { ...player, points: player.points + (pointMap[player.id] ?? 0) }
+          : player
+      )
+
+      tx.update(gameRef, {
+        players,
+        scoredRound: data.round,
+        scoring: {},
+      })
+    })
   }
 
   getServerTimeMs = async (hostId: string): Promise<number> => {

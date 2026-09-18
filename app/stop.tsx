@@ -46,6 +46,7 @@ import { getAuth } from "@react-native-firebase/auth"
 import { formatTime } from "@/libs/formatTime"
 import { useStorage } from "@/hooks/useStorage"
 import { parseBoolean } from "@/libs/parseBoolean"
+import { pointsForOffline } from "@/libs/scoring"
 import { useTranslation } from "react-i18next"
 import { BottomSheetModal } from "@/components/BottomSheetModal"
 import BottomSheet from "@gorhom/bottom-sheet"
@@ -98,6 +99,7 @@ export default function Stop() {
   const [loaded, setLoaded] = useState(false)
   const [idModalVisible, setIdModalVisible] = useState<boolean>(true)
   const [copied, setCopied] = useState<boolean>(false)
+  const [myChoice, setMyChoice] = useState<boolean | null>(null)
   const [inputs, setInputs] = useState({
     name: "",
     lastName: "",
@@ -345,6 +347,29 @@ export default function Stop() {
     }
   }, [])
 
+  useEffect(() => {
+    if (mode === "offline") return
+    if (!gameData) return
+
+    if (gameData.gameStatus !== GameStatus.STOPPED) return
+
+    if (gameData.scoredRound === gameData.round) {
+      if (myChoice !== null) setMyChoice(null)
+      return
+    }
+
+    const scoredData = gameData.scoring
+    if (!scoredData) return
+
+    const allSubmitted = gameData.players.every(
+      (player) => player.id && scoredData[player.id] !== undefined,
+    )
+
+    if (allSubmitted && gameData.players.length > 1) {
+      Fire.scoreRound(gameData.gameId)
+    }
+  }, [gameData, mode, myChoice])
+
   const setTitleByGameStatus = (gameStatus: number | undefined) => {
     switch (gameStatus) {
       case GameStatus.CREATED:
@@ -442,6 +467,8 @@ export default function Stop() {
     Fire.updateGame("stop", data.gameId, {
       round: data.round + 1,
     })
+    Fire.clearScoring(data.gameId)
+    setMyChoice(null)
 
     const offset = await Fire.getServerOffset(data.host)
 
@@ -523,32 +550,20 @@ export default function Stop() {
     setReady(false)
   }
 
-  const handleSumPoints = (toAdd: number) => {
+  const handleChooseWords = async (sameWords: boolean) => {
+    vibrationEnabled.current && Vibration.vibrate(15)
+    setMyChoice(sameWords)
+
     if (mode === "offline") {
-      setPoints(points + toAdd)
+      setPoints((prev) => prev + pointsForOffline(sameWords))
+      return
     }
 
     if (!gameData) return
     const userId = getAuth().currentUser?.uid
     if (!userId) return
 
-    setPoints(points + toAdd)
-
-    Fire.updatePlayerPoints("stop", gameData.gameId, userId, toAdd)
-
-    const updatedPlayers = gameData.players.map((player) => {
-      if (player.id === userId) {
-        return {
-          ...player,
-          points: player.points + toAdd,
-        }
-      }
-      return player
-    })
-
-    Fire.updateGame("stop", gameData.gameId, {
-      players: updatedPlayers,
-    })
+    await Fire.submitChoice(gameData.gameId, userId, sameWords)
   }
 
   const handleBackPress = (data?: StopModel | null): boolean => {
@@ -677,6 +692,16 @@ export default function Stop() {
   }
 
   const isInProgress = gameData?.gameStatus === GameStatus.IN_PROGRESS
+  const isScoringVisible =
+    mode === "offline" ||
+    (gameData?.gameStatus === GameStatus.STOPPED &&
+      gameData.scoredRound !== gameData.round)
+  const displayedPoints =
+    mode === "offline"
+      ? points
+      : (gameData?.players.find(
+          (player) => player.id === getAuth().currentUser?.uid,
+        )?.points ?? 0)
 
   return (
     <Screen>
@@ -815,42 +840,6 @@ export default function Stop() {
               </View>
             )}
 
-            {isInProgress ? (
-              <View style={styles.heroRow}>
-                <LinearGradient
-                  colors={
-                    isStarting || typeof countdown === "number"
-                      ? Theme.gradients.cardHigh
-                      : Theme.gradients.primaryDeep
-                  }
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={styles.letterBadge}
-                >
-                  <Text style={styles.heroChar}>{countdown}</Text>
-                </LinearGradient>
-                {!isStarting && (
-                  <Text style={styles.heroHint}>{t("fill_spaces")}</Text>
-                )}
-              </View>
-            ) : (
-              gameData?.gameStatus === GameStatus.STOPPED && (
-                <View style={styles.pointsRow}>
-                  {(gameData?.players.length === 4 || mode === "offline") && (
-                    <ScoreChip value={25} onPress={handleSumPoints} />
-                  )}
-
-                  <ScoreChip value={50} onPress={handleSumPoints} />
-
-                  {(gameData?.players.length === 3 || mode === "offline") && (
-                    <ScoreChip value={75} onPress={handleSumPoints} />
-                  )}
-
-                  <ScoreChip value={100} onPress={handleSumPoints} />
-                </View>
-              )
-            )}
-
             <View style={styles.boardWrap}>
               <View style={styles.columns}>
                 <View style={styles.column}>
@@ -887,6 +876,44 @@ export default function Stop() {
               </View>
             </View>
 
+            {isInProgress ? (
+              <View style={styles.heroRow}>
+                <LinearGradient
+                  colors={
+                    isStarting || typeof countdown === "number"
+                      ? Theme.gradients.cardHigh
+                      : Theme.gradients.primaryDeep
+                  }
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.letterBadge}
+                >
+                  <Text style={styles.heroChar}>{countdown}</Text>
+                </LinearGradient>
+                {!isStarting && (
+                  <Text style={styles.heroHint}>{t("fill_spaces")}</Text>
+                )}
+              </View>
+            ) : isScoringVisible ? (
+              <View style={styles.pointsRow}>
+                <Text style={styles.pointsScoreTitle}>{t("your_words")}</Text>
+                <View style={styles.wordsRow}>
+                  <ChoiceButton
+                    label={t("same_words")}
+                    selected={myChoice === true}
+                    onPress={() => handleChooseWords(true)}
+                  />
+                  <ChoiceButton
+                    label={t("different_words")}
+                    selected={myChoice === false}
+                    onPress={() => handleChooseWords(false)}
+                  />
+                </View>
+              </View>
+            ) : (
+              <View style={styles.pointsRow}></View>
+            )}
+
             <View style={styles.statsRow}>
               {mode !== "offline" && (
                 <StatChip
@@ -894,7 +921,7 @@ export default function Stop() {
                   value={`${gameData?.round === 0 ? 1 : (gameData?.round ?? 0)}`}
                 />
               )}
-              <StatChip label={t("your_points")} value={`${points}`} />
+              <StatChip label={t("your_points")} value={`${displayedPoints}`} />
             </View>
 
             <View style={styles.actionsRow}>
@@ -1069,26 +1096,38 @@ const CurrentPlayers = ({
   )
 }
 
-const ScoreChip = ({
-  value,
+const ChoiceButton = ({
+  label,
+  selected,
   onPress,
 }: {
-  value: number
-  onPress: (value: number) => void
+  label: string
+  selected: boolean
+  onPress: () => void
 }) => {
   return (
     <Pressable
-      onPress={() => onPress(value)}
+      onPress={onPress}
       style={({ pressed }) => [
+        styles.choiceButton,
+        selected && styles.choiceButtonSelected,
         {
-          opacity: pressed ? 0.75 : 1,
-          transform: [{ scale: pressed ? 0.94 : 1 }],
+          opacity: pressed ? 0.8 : 1,
+          transform: [{ scale: pressed ? 0.97 : 1 }],
         },
-        styles.scoreChip,
       ]}
     >
-      <Text style={styles.scoreChipSign}>+</Text>
-      <Text style={styles.scoreChipValue}>{value}</Text>
+      <Text
+        style={[styles.choiceLabel, selected && styles.choiceLabelSelected]}
+        numberOfLines={1}
+      >
+        {label}
+      </Text>
+      {selected ? (
+        <CheckIcon size={18} color={Theme.colors.primarySoft} />
+      ) : (
+        <View style={styles.choiceDot} />
+      )}
     </Pressable>
   )
 }
@@ -1234,8 +1273,9 @@ const styles = StyleSheet.create({
   },
   heroRow: {
     flexDirection: "column",
-    justifyContent: "center",
+    justifyContent: "flex-end",
     alignItems: "center",
+    flex: 1,
     gap: Theme.spacing.m,
     paddingVertical: Theme.spacing.l,
   },
@@ -1260,15 +1300,59 @@ const styles = StyleSheet.create({
     fontSize: Theme.sizes.h5,
   },
   pointsRow: {
+    flex: 1,
     flexDirection: "column",
+    justifyContent: "flex-end",
     alignItems: "center",
     gap: Theme.spacing.m,
+    paddingVertical: Theme.spacing.l,
+    width: "100%",
+  },
+  wordsRow: {
+    flexDirection: "row",
+    gap: Theme.spacing.m,
+    width: "100%",
+    maxWidth: 420,
+  },
+  choiceButton: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: Theme.spacing.s,
+    backgroundColor: Theme.colors.surface,
+    borderWidth: 1,
+    borderColor: Theme.colors.borderSoft,
+    borderRadius: Theme.radii.lg,
     paddingVertical: Theme.spacing.m,
+    paddingHorizontal: Theme.spacing.m,
+    ...Theme.shadows.sm,
+  },
+  choiceButtonSelected: {
+    backgroundColor: Theme.colors.primary2,
+    borderColor: Theme.colors.primarySoft,
+  },
+  choiceLabel: {
+    color: Theme.colors.lightGray,
+    fontFamily: Theme.fonts.onestBold,
+    fontSize: Theme.sizes.h5,
+    flexShrink: 1,
+  },
+  choiceLabelSelected: {
+    color: Theme.colors.primarySoft,
+  },
+  choiceDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    borderWidth: 2,
+    borderColor: Theme.colors.darkGray,
   },
   pointsScoreTitle: {
     color: Theme.colors.text,
     fontFamily: Theme.fonts.onestBold,
     fontSize: Theme.sizes.h3,
+    textAlign: "center",
   },
   boardWrap: {
     gap: Theme.spacing.m,
@@ -1286,7 +1370,6 @@ const styles = StyleSheet.create({
     gap: Theme.spacing.m,
   },
   statsRow: {
-    flex: 1,
     flexDirection: "row",
     gap: Theme.spacing.m,
     justifyContent: "center",
@@ -1336,30 +1419,6 @@ const styles = StyleSheet.create({
     fontSize: Theme.sizes.h6,
     textTransform: "uppercase",
     letterSpacing: 0.8,
-  },
-  scoreChip: {
-    minWidth: 72,
-    paddingVertical: Theme.spacing.m,
-    paddingHorizontal: Theme.spacing.l,
-    borderRadius: Theme.radii.pill,
-    backgroundColor: Theme.colors.surface,
-    borderWidth: 1,
-    borderColor: Theme.colors.borderSoft,
-    alignItems: "center",
-    flexDirection: "row",
-    justifyContent: "center",
-    gap: Theme.spacing.xs,
-    ...Theme.shadows.sm,
-  },
-  scoreChipSign: {
-    color: Theme.colors.primarySoft,
-    fontFamily: Theme.fonts.onestBold,
-    fontSize: Theme.sizes.h4,
-  },
-  scoreChipValue: {
-    color: Theme.colors.text,
-    fontFamily: Theme.fonts.onestBold,
-    fontSize: Theme.sizes.h4,
   },
   roomRow: {
     flexDirection: "row",

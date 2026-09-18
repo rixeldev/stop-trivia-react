@@ -118,6 +118,9 @@
   "error_login_password_min": "Password must be at least 6 characters.",
   "error_login_email_password_invalid": "Invalid email or password.",
   "error_login_many_attemps": "Too many attempts. Try again later.",
+  "splashscreen": {
+    "tagline": "Quick Thinking · Word games"
+  },
   "onboarding": {
     "title0": "Get started with Stop Trivia",
     "text0": "This game is very easy to play. Just follow the instructions and have fun.",

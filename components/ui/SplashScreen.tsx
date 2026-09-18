@@ -1,10 +1,10 @@
 import LottieView from "lottie-react-native"
-import { SafeAreaView } from "react-native-safe-area-context"
 import ic from "@/assets/lotties/ic_brand.json"
 import { Theme } from "@/constants/Theme"
 import { LinearGradient } from "expo-linear-gradient"
-import { Text, StyleSheet, Animated, Easing } from "react-native"
+import { Animated, Easing, StyleSheet, Text } from "react-native"
 import { useEffect, useRef } from "react"
+import { useTranslation } from "react-i18next"
 
 export default function SplashScreen({
   onFinish = (isCancelled) => {},
@@ -13,20 +13,21 @@ export default function SplashScreen({
 }) {
   const fade = useRef(new Animated.Value(0)).current
   const translate = useRef(new Animated.Value(12)).current
+  const { t } = useTranslation()
 
   useEffect(() => {
     Animated.parallel([
       Animated.timing(fade, {
         toValue: 1,
-        duration: 700,
-        delay: 400,
+        duration: 600,
+        delay: 200,
         useNativeDriver: true,
         easing: Easing.out(Easing.ease),
       }),
       Animated.timing(translate, {
         toValue: 0,
-        duration: 700,
-        delay: 400,
+        duration: 600,
+        delay: 200,
         useNativeDriver: true,
         easing: Easing.out(Easing.ease),
       }),
@@ -34,64 +35,64 @@ export default function SplashScreen({
   }, [fade, translate])
 
   return (
-    <SafeAreaView style={styles.container}>
-      <LinearGradient
-        colors={Theme.gradients.background}
-        start={{ x: 0.5, y: 0 }}
-        end={{ x: 0.5, y: 1 }}
-        style={StyleSheet.absoluteFill}
-      />
-      <LottieView
-        onAnimationFinish={onFinish}
-        source={ic}
-        autoPlay
-        loop={false}
-        duration={3000}
-        style={styles.lottie}
-      />
-
+    <LinearGradient
+      colors={Theme.gradients.background}
+      start={{ x: 0.5, y: 0 }}
+      end={{ x: 0.5, y: 1 }}
+      style={StyleSheet.absoluteFill}
+    >
       <Animated.View
         style={[
-          styles.brand,
+          styles.center,
           { opacity: fade, transform: [{ translateY: translate }] },
         ]}
       >
-        <Text style={styles.brandTitle}>
-          Stop{" "}
-          <Text style={{ color: Theme.colors.primarySoft }}>Trivia</Text>
+        <LottieView
+          onAnimationFinish={onFinish}
+          source={ic}
+          autoPlay
+          loop={false}
+          duration={3000}
+          style={styles.lottie}
+        />
+
+        <Text style={styles.title}>
+          Stop <Text style={styles.titleAccent}>Trivia</Text>
         </Text>
-        <Text style={styles.tagline}>Quick thinking · Word games</Text>
+
+        <Text style={styles.tagline}>{t("splashscreen.tagline")}</Text>
       </Animated.View>
-    </SafeAreaView>
+    </LinearGradient>
   )
 }
 
 const styles = StyleSheet.create({
-  container: {
+  center: {
     flex: 1,
-    backgroundColor: Theme.colors.background,
     alignItems: "center",
     justifyContent: "center",
+    gap: Theme.spacing.s,
   },
   lottie: {
-    width: "55%",
-    aspectRatio: 1,
-    maxHeight: 280,
+    width: 120,
+    height: 120,
+    marginBottom: Theme.spacing.m,
   },
-  brand: {
-    alignItems: "center",
-    gap: Theme.spacing.s,
-    marginTop: -Theme.spacing.l,
-  },
-  brandTitle: {
+  title: {
     fontFamily: Theme.fonts.onestBold,
-    fontSize: Theme.sizes.display,
+    fontSize: Theme.sizes.hero,
     color: Theme.colors.text,
+    width: "100%",
+    textAlign: "center",
+  },
+  titleAccent: {
+    color: Theme.colors.primarySoft,
   },
   tagline: {
     fontFamily: Theme.fonts.onest,
     fontSize: Theme.sizes.h5,
     color: Theme.colors.gray,
     letterSpacing: 0.4,
+    textAlign: "center",
   },
 })

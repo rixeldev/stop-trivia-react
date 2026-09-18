@@ -118,6 +118,9 @@
   "error_login_password_min": "La contraseña debe tener al menos 6 caracteres.",
   "error_login_email_password_invalid": "Correo o contraseña inválidos.",
   "error_login_many_attemps": "Demasiados intentos. Intenta de nuevo más tarde.",
+  "splashscreen": {
+    "tagline": "Rápido Pensamiento · Juegos de Palabras"
+  },
   "onboarding": {
     "title0": "Comienza con Stop Trivia",
     "text0": "Este juego es muy fácil de jugar. Solo sigue las instrucciones y diviértete.",

@@ -41,7 +41,12 @@ import { PlayingButton } from "@/components/PlayingButton"
 import { Badge } from "@/components/ui/Badge"
 import Fire from "@/db/Fire"
 import { sixDigit } from "@/libs/randomId"
-import { StopModel, GameStatus } from "@/interfaces/Game"
+import {
+  StopModel,
+  GameStatus,
+  StopReviewSubmission,
+} from "@/interfaces/Game"
+import { ReviewWizard } from "@/components/ReviewWizard"
 import { getAuth } from "@react-native-firebase/auth"
 import { formatTime } from "@/libs/formatTime"
 import { useStorage } from "@/hooks/useStorage"
@@ -100,6 +105,8 @@ export default function Stop() {
   const [idModalVisible, setIdModalVisible] = useState<boolean>(true)
   const [copied, setCopied] = useState<boolean>(false)
   const [myChoice, setMyChoice] = useState<boolean | null>(null)
+  const [myReviewSubmitted, setMyReviewSubmitted] =
+    useState<boolean>(false)
   const [inputs, setInputs] = useState({
     name: "",
     lastName: "",
@@ -353,20 +360,37 @@ export default function Stop() {
 
     if (gameData.gameStatus !== GameStatus.STOPPED) return
 
-    if (gameData.scoredRound === gameData.round) {
-      if (myChoice !== null) setMyChoice(null)
+    if (gameData.players.length <= 1) {
+      if (gameData.scoredRound === gameData.round) {
+        if (myChoice !== null) setMyChoice(null)
+        return
+      }
+
+      const scoredData = gameData.scoring
+      if (!scoredData) return
+
+      const allSubmitted = gameData.players.every(
+        (player) => player.id && scoredData[player.id] !== undefined,
+      )
+
+      if (allSubmitted && gameData.players.length > 1) {
+        Fire.scoreRound(gameData.gameId)
+      }
       return
     }
 
-    const scoredData = gameData.scoring
-    if (!scoredData) return
+    if (gameData.reviewedRound === gameData.round) return
+
+    const reviewsData = gameData.reviews
+    if (!reviewsData) return
+    if (Object.keys(reviewsData).length === 0) return
 
     const allSubmitted = gameData.players.every(
-      (player) => player.id && scoredData[player.id] !== undefined,
+      (player) => player.id && reviewsData[player.id],
     )
 
-    if (allSubmitted && gameData.players.length > 1) {
-      Fire.scoreRound(gameData.gameId)
+    if (allSubmitted) {
+      Fire.scoreRoundWithReviews(gameData.gameId)
     }
   }, [gameData, mode, myChoice])
 
@@ -468,7 +492,9 @@ export default function Stop() {
       round: data.round + 1,
     })
     Fire.clearScoring(data.gameId)
+    Fire.clearReviews(data.gameId)
     setMyChoice(null)
+    setMyReviewSubmitted(false)
 
     const offset = await Fire.getServerOffset(data.host)
 
@@ -564,6 +590,15 @@ export default function Stop() {
     if (!userId) return
 
     await Fire.submitChoice(gameData.gameId, userId, sameWords)
+  }
+
+  const handleSubmitReview = async (review: StopReviewSubmission) => {
+    const userId = getAuth().currentUser?.uid
+    if (!userId || !gameData) return
+
+    vibrationEnabled.current && Vibration.vibrate(20)
+    setMyReviewSubmitted(true)
+    await Fire.submitReview(gameData.gameId, userId, review)
   }
 
   const handleBackPress = (data?: StopModel | null): boolean => {
@@ -696,6 +731,17 @@ export default function Stop() {
     mode === "offline" ||
     (gameData?.gameStatus === GameStatus.STOPPED &&
       gameData.scoredRound !== gameData.round)
+  const isReviewMode =
+    mode !== "offline" &&
+    gameData?.gameStatus === GameStatus.STOPPED &&
+    (gameData?.players.length ?? 0) > 1
+  const allHaveInputs = (gameData?.players ?? []).every(
+    (player) =>
+      player.inputs !== undefined && player.inputsRound === gameData?.round,
+  )
+  const hasSubmittedReview =
+    myReviewSubmitted ||
+    !!gameData?.reviews?.[getAuth().currentUser?.uid ?? ""]
   const displayedPoints =
     mode === "offline"
       ? points
@@ -894,6 +940,34 @@ export default function Stop() {
                   <Text style={styles.heroHint}>{t("fill_spaces")}</Text>
                 )}
               </View>
+            ) : isReviewMode ? (
+              gameData?.reviewedRound === gameData.round ? (
+                <View style={styles.pointsRow} />
+              ) : !allHaveInputs ? (
+                <View style={styles.pointsRow}>
+                  <ActivityIndicator
+                    size="large"
+                    color={Theme.colors.primarySoft}
+                  />
+                  <Text style={styles.waitingText}>{t("waiting_words")}</Text>
+                </View>
+              ) : !hasSubmittedReview ? (
+                <ReviewWizard
+                  players={gameData.players}
+                  myId={getAuth().currentUser?.uid ?? ""}
+                  myInputs={inputs}
+                  letter={gameData.currentLetter}
+                  onSubmit={handleSubmitReview}
+                />
+              ) : (
+                <View style={styles.pointsRow}>
+                  <ActivityIndicator
+                    size="large"
+                    color={Theme.colors.primarySoft}
+                  />
+                  <Text style={styles.waitingText}>{t("waiting_review")}</Text>
+                </View>
+              )
             ) : isScoringVisible ? (
               <View style={styles.pointsRow}>
                 <Text style={styles.pointsScoreTitle}>{t("your_words")}</Text>
@@ -1353,6 +1427,13 @@ const styles = StyleSheet.create({
     fontFamily: Theme.fonts.onestBold,
     fontSize: Theme.sizes.h3,
     textAlign: "center",
+  },
+  waitingText: {
+    color: Theme.colors.gray,
+    fontFamily: Theme.fonts.onest,
+    fontSize: Theme.sizes.h5,
+    textAlign: "center",
+    maxWidth: 320,
   },
   boardWrap: {
     gap: Theme.spacing.m,

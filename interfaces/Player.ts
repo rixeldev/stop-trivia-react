@@ -6,6 +6,7 @@ export interface StopPlayer {
   points: number
   photoURL?: string
   inputs?: StopGameInputs
+  inputsRound?: number
 }
 
 export interface TTTPlayer {

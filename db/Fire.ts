@@ -9,10 +9,18 @@ import {
   serverTimestamp,
   runTransaction,
 } from "@react-native-firebase/firestore"
-import { StopModel, GameStatus, TTTModel } from "@/interfaces/Game"
+import {
+  StopModel,
+  GameStatus,
+  TTTModel,
+  StopReviewSubmission,
+} from "@/interfaces/Game"
 import { StopPlayer, TTTPlayer } from "@/interfaces/Player"
 import { StopGameInputs } from "@/interfaces/StopGameInputs"
-import { computeStopRoundPoints } from "@/libs/scoring"
+import {
+  computeStopRoundPoints,
+  computeStopRoundPointsWithReviews,
+} from "@/libs/scoring"
 
 const db = getFirestore()
 
@@ -102,9 +110,9 @@ class Fire {
     await runTransaction(db, async (tx) => {
       const snap = await tx.get(gameRef)
       if (!snap.exists()) return
-      const data = snap.data()
+      const data = snap.data() as StopModel
       const players = data?.players.map((p: StopPlayer) =>
-        p.id === userId ? { ...p, inputs } : p
+        p.id === userId ? { ...p, inputs, inputsRound: data.round } : p
       )
       tx.update(gameRef, { players })
     })
@@ -176,6 +184,57 @@ class Fire {
         players,
         scoredRound: data.round,
         scoring: {},
+      })
+    })
+  }
+
+  submitReview = async (
+    gameId: string,
+    userId: string,
+    review: StopReviewSubmission
+  ) => {
+    const gameRef = doc(db, "stop", gameId)
+    await updateDoc(gameRef, {
+      [`reviews.${userId}`]: review,
+    })
+  }
+
+  clearReviews = async (gameId: string) => {
+    const gameRef = doc(db, "stop", gameId)
+    await updateDoc(gameRef, { reviews: {}, reviewedRound: null })
+  }
+
+  scoreRoundWithReviews = async (gameId: string): Promise<void> => {
+    const gameRef = doc(db, "stop", gameId)
+    await runTransaction(db, async (tx) => {
+      const snap = await tx.get(gameRef)
+      if (!snap.exists()) return
+      const data = snap.data() as StopModel
+      const reviewsData = data.reviews
+      if (!reviewsData || data.reviewedRound === data.round) return
+
+      const allSubmitted =
+        data.players.length > 0 &&
+        data.players.every(
+          (player) => player.id && reviewsData[player.id]
+        )
+      if (!allSubmitted) return
+
+      const pointMap = computeStopRoundPointsWithReviews(
+        data.players,
+        reviewsData
+      )
+      const players = data.players.map((player) =>
+        player.id
+          ? { ...player, points: player.points + (pointMap[player.id] ?? 0) }
+          : player
+      )
+
+      tx.update(gameRef, {
+        players,
+        reviewedRound: data.round,
+        scoring: {},
+        reviews: {},
       })
     })
   }

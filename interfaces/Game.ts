@@ -1,4 +1,5 @@
 import { StopPlayer, TTTPlayer } from "@/interfaces/Player"
+import { StopGameInputs } from "@/interfaces/StopGameInputs"
 
 export interface StopModel {
   gameId: string
@@ -13,7 +14,20 @@ export interface StopModel {
   timestamp: number
   scoring?: Record<string, boolean> | null
   scoredRound?: number | null
+  reviews?: Record<string, StopReviewSubmission> | null
+  reviewedRound?: number | null
 }
+
+export interface WordReview {
+  same: boolean
+  accepted: boolean
+}
+
+export type StopReviewsByInput = Partial<
+  Record<keyof StopGameInputs, WordReview>
+>
+
+export type StopReviewSubmission = Record<string, StopReviewsByInput>
 
 export interface TTTModel {
   gameId: string

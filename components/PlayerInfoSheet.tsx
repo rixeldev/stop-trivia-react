@@ -39,7 +39,11 @@ export const PlayerInfoSheet = ({ sheetRef, player, myUid }: Props) => {
   const me = auth.currentUser
 
   const showToast = (message: string) => {
-    ToastAndroid.showWithGravity(message, ToastAndroid.SHORT, ToastAndroid.BOTTOM)
+    ToastAndroid.showWithGravity(
+      message,
+      ToastAndroid.SHORT,
+      ToastAndroid.BOTTOM,
+    )
   }
 
   const handleAddFriend = async () => {
@@ -125,11 +129,7 @@ export const PlayerInfoSheet = ({ sheetRef, player, myUid }: Props) => {
   return (
     <BottomSheetModal
       title={player?.name ?? ""}
-      description={
-        player
-          ? `${t("players")} · ${player.points ?? 0} ${t("points")}`
-          : undefined
-      }
+      description={player ? `${player.points ?? 0} ${t("points")}` : undefined}
       ref={sheetRef}
       icon={<UsersIcon size={20} color={Theme.colors.primarySoft} />}
     >

@@ -760,7 +760,6 @@ export default function Stop() {
     if (mode === "offline") return
     if (!connection) return
     if (gameData?.gameStatus === GameStatus.IN_PROGRESS) return
-    if (gameData?.gameStatus === GameStatus.CREATED) return
     if (player.id === getAuth().currentUser?.uid) return
 
     sheetRef.current?.close()
@@ -918,12 +917,6 @@ export default function Stop() {
           setCloseModalVisible(!closeModalVisible)
         }}
         onAccept={handleOnExit}
-      />
-
-      <PlayerInfoSheet
-        sheetRef={playerSheetRef}
-        player={selectedPlayer}
-        myUid={getAuth().currentUser?.uid}
       />
 
       <WinnerModal winner={winner} onClose={handleWinnerClose} />
@@ -1104,7 +1097,7 @@ export default function Stop() {
                 />
               )}
 
-              {gameData?.gameStatus !== GameStatus.IN_PROGRESS && (
+              {mode === "offline" && gameData?.gameStatus !== GameStatus.IN_PROGRESS && (
                 <ActionButton
                   flag="restart"
                   label="Restart"
@@ -1139,8 +1132,15 @@ export default function Stop() {
           </View>
 
           {gameData &&
-            gameData.players
-              .sort((a, b) => b.points - a.points)
+            [...gameData.players]
+              .sort((a, b) => {
+                const diff = (b.points ?? 0) - (a.points ?? 0)
+                if (diff !== 0) return diff
+                const myUid = getAuth().currentUser?.uid
+                if (a.id === myUid) return -1
+                if (b.id === myUid) return 1
+                return 0
+              })
               .map((player, index) => (
                 <Pressable
                   key={player.id}
@@ -1194,6 +1194,12 @@ export default function Stop() {
               ))}
         </View>
       </BottomSheetModal>
+
+      <PlayerInfoSheet
+        sheetRef={playerSheetRef}
+        player={selectedPlayer}
+        myUid={getAuth().currentUser?.uid}
+      />
     </Screen>
   )
 }

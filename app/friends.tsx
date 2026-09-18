@@ -1,6 +1,6 @@
 import { Stack, useNavigation } from "expo-router"
 import { useTranslation } from "react-i18next"
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import {
   Image,
   Pressable,
@@ -12,6 +12,7 @@ import {
   View,
 } from "react-native"
 import { LinearGradient } from "expo-linear-gradient"
+import BottomSheet from "@gorhom/bottom-sheet"
 import {
   BackIcon,
   CheckIcon,
@@ -23,8 +24,17 @@ import { Theme } from "@/constants/Theme"
 import { auth } from "@/db/firebaseConfig"
 import Fire from "@/db/Fire"
 import { useFriends } from "@/hooks/useFriends"
-import { FriendProfile } from "@/interfaces/User"
+import { FriendEntry, FriendProfile } from "@/interfaces/User"
 import { Screen } from "@/components/ui/Screen"
+import { BottomSheetModal } from "@/components/BottomSheetModal"
+import { SecondaryButton } from "@/components/ui/SecondaryButton"
+import { CustomModal } from "@/components/CustomModal"
+
+type Confirm = null | {
+  type: "cancel" | "decline" | "remove"
+  id: string
+  name?: string | null
+}
 
 type Lookup =
   | { status: "idle" }
@@ -33,12 +43,7 @@ type Lookup =
   | { status: "self" }
   | { status: "profile"; profile: FriendProfile }
 
-type Relation =
-  | "none"
-  | "friend"
-  | "sent"
-  | "received"
-  | "self"
+type Relation = "none" | "friend" | "sent" | "received" | "self"
 
 export default function Friends() {
   const { t } = useTranslation()
@@ -47,6 +52,9 @@ export default function Friends() {
   const [addId, setAddId] = useState("")
   const [lookup, setLookup] = useState<Lookup>({ status: "idle" })
   const [workingId, setWorkingId] = useState("")
+  const [confirm, setConfirm] = useState<Confirm>(null)
+  const [selectedFriend, setSelectedFriend] = useState<FriendEntry | null>(null)
+  const friendSheetRef = useRef<BottomSheet>(null)
 
   const { friends, received, sent, friendsIds, receivedIds, sentIds } =
     useFriends(userId)
@@ -58,7 +66,11 @@ export default function Friends() {
   const me = auth.currentUser
 
   const showToast = (message: string) => {
-    ToastAndroid.showWithGravity(message, ToastAndroid.SHORT, ToastAndroid.BOTTOM)
+    ToastAndroid.showWithGravity(
+      message,
+      ToastAndroid.SHORT,
+      ToastAndroid.BOTTOM,
+    )
   }
 
   const handleSearch = async () => {
@@ -132,42 +144,72 @@ export default function Friends() {
     }
   }
 
-  const handleDecline = async (otherId: string) => {
-    if (!me?.uid || !otherId) return
-    setWorkingId(otherId)
+  const openCancelConfirm = (id: string, name?: string | null) => {
+    if (workingId === id) return
+    setConfirm({ type: "cancel", id, name })
+  }
+
+  const openDeclineConfirm = (id: string, name?: string | null) => {
+    if (workingId === id) return
+    setConfirm({ type: "decline", id, name })
+  }
+
+  const openRemoveConfirm = (id: string, name?: string | null) => {
+    if (workingId === id) return
+    setConfirm({ type: "remove", id, name })
+  }
+
+  const confirmAccept = async () => {
+    if (!confirm || !me?.uid) return
+    const { type, id } = confirm
+    setWorkingId(id)
     try {
-      await Fire.declineFriendRequest(me.uid, otherId)
-      showToast(t("request_declined"))
+      if (type === "cancel") {
+        await Fire.cancelFriendRequest(me.uid, id)
+        showToast(t("request_cancelled"))
+      } else if (type === "decline") {
+        await Fire.declineFriendRequest(me.uid, id)
+        showToast(t("request_declined"))
+      } else {
+        await Fire.removeFriend(me.uid, id)
+        showToast(t("friend_removed"))
+        friendSheetRef.current?.close()
+      }
     } catch {
       /* ignore */
     } finally {
       setWorkingId("")
+      setConfirm(null)
     }
   }
 
-  const handleCancel = async (otherId: string) => {
-    if (!me?.uid || !otherId) return
-    setWorkingId(otherId)
-    try {
-      await Fire.cancelFriendRequest(me.uid, otherId)
-    } catch {
-      /* ignore */
-    } finally {
-      setWorkingId("")
-    }
-  }
+  const confirmTitle = confirm
+    ? confirm.type === "cancel"
+      ? t("confirm_cancel_request")
+      : confirm.type === "decline"
+        ? t("confirm_decline_request")
+        : t("confirm_remove_friend")
+    : ""
 
-  const handleRemove = async (otherId: string) => {
-    if (!me?.uid || !otherId) return
-    setWorkingId(otherId)
-    try {
-      await Fire.removeFriend(me.uid, otherId)
-      showToast(t("friend_removed"))
-    } catch {
-      /* ignore */
-    } finally {
-      setWorkingId("")
-    }
+  const confirmDescription = confirm
+    ? confirm.type === "cancel"
+      ? t("confirm_cancel_request_desc", { name: confirm.name ?? "" })
+      : confirm.type === "decline"
+        ? t("confirm_decline_request_desc", { name: confirm.name ?? "" })
+        : t("confirm_remove_friend_desc", { name: confirm.name ?? "" })
+    : ""
+
+  const confirmAcceptLabel = confirm
+    ? confirm.type === "cancel"
+      ? t("cancel_request")
+      : confirm.type === "decline"
+        ? t("decline_request")
+        : t("remove_friend")
+    : ""
+
+  const openFriendSheet = (friend: FriendEntry) => {
+    setSelectedFriend(friend)
+    setTimeout(() => friendSheetRef.current?.expand(), 300)
   }
 
   const renderLookup = () => {
@@ -220,7 +262,8 @@ export default function Friends() {
               disabled={workingId === lookup.profile.uid}
               onPress={() => {
                 if (relation === "received") handleAccept(lookup.profile.uid)
-                else if (relation === "sent") handleCancel(lookup.profile.uid)
+                else if (relation === "sent")
+                  openCancelConfirm(lookup.profile.uid, lookup.profile.name)
                 else if (relation === "friend") {
                   /* no-op */
                 } else handleSendRequest(lookup.profile)
@@ -364,7 +407,9 @@ export default function Friends() {
                         { opacity: pressed ? 0.7 : 1 },
                       ]}
                       disabled={workingId === request.id}
-                      onPress={() => handleDecline(request.id)}
+                      onPress={() =>
+                        openDeclineConfirm(request.id, request.name)
+                      }
                     >
                       <CloseIcon size={18} color={Theme.colors.text} />
                     </Pressable>
@@ -409,7 +454,7 @@ export default function Friends() {
                       { opacity: pressed ? 0.7 : 1 },
                     ]}
                     disabled={workingId === request.id}
-                    onPress={() => handleCancel(request.id)}
+                    onPress={() => openCancelConfirm(request.id, request.name)}
                   >
                     <Text style={styles.textActionLabel}>
                       {t("cancel_request")}
@@ -433,21 +478,29 @@ export default function Friends() {
             friends.map((friend) => (
               <View key={friend.id}>
                 <View style={styles.row}>
-                  <View style={styles.avatar}>
-                    {friend.photoURL ? (
-                      <Image
-                        style={styles.avatarImage}
-                        source={{ uri: friend.photoURL }}
-                      />
-                    ) : (
-                      <UserIcon size={20} color={Theme.colors.primarySoft} />
-                    )}
-                  </View>
-                  <View style={styles.rowText}>
-                    <Text style={styles.rowTitle} numberOfLines={1}>
-                      {friend.name ?? "Unknown"}
-                    </Text>
-                  </View>
+                  <Pressable
+                    style={({ pressed }) => [
+                      styles.rowTap,
+                      { opacity: pressed ? 0.7 : 1 },
+                    ]}
+                    onPress={() => openFriendSheet(friend)}
+                  >
+                    <View style={styles.avatar}>
+                      {friend.photoURL ? (
+                        <Image
+                          style={styles.avatarImage}
+                          source={{ uri: friend.photoURL }}
+                        />
+                      ) : (
+                        <UserIcon size={20} color={Theme.colors.primarySoft} />
+                      )}
+                    </View>
+                    <View style={styles.rowText}>
+                      <Text style={styles.rowTitle} numberOfLines={1}>
+                        {friend.name ?? "Unknown"}
+                      </Text>
+                    </View>
+                  </Pressable>
                   <Pressable
                     style={({ pressed }) => [
                       styles.iconBtn,
@@ -455,7 +508,7 @@ export default function Friends() {
                       { opacity: pressed ? 0.7 : 1 },
                     ]}
                     disabled={workingId === friend.id}
-                    onPress={() => handleRemove(friend.id)}
+                    onPress={() => openRemoveConfirm(friend.id, friend.name)}
                   >
                     <CloseIcon size={18} color={Theme.colors.text} />
                   </Pressable>
@@ -466,6 +519,80 @@ export default function Friends() {
           )}
         </View>
       </ScrollView>
+
+      <BottomSheetModal
+        ref={friendSheetRef}
+        title={t("friend_profile")}
+        description={t("friend_profile_desc")}
+        icon={<UserIcon size={20} color={Theme.colors.primarySoft} />}
+      >
+        <LinearGradient
+          colors={Theme.gradients.cardHigh}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.sheetCard}
+        >
+          <View style={styles.sheetAvatar}>
+            {selectedFriend?.photoURL ? (
+              <Image
+                style={styles.avatarImage}
+                source={{ uri: selectedFriend.photoURL }}
+              />
+            ) : (
+              <UserIcon size={32} color={Theme.colors.primarySoft} />
+            )}
+          </View>
+          <View style={styles.sheetText}>
+            <Text style={styles.sheetName} numberOfLines={2}>
+              {selectedFriend?.name}
+            </Text>
+            <Text style={styles.sheetId} numberOfLines={1}>
+              {selectedFriend?.id}
+            </Text>
+          </View>
+        </LinearGradient>
+
+        <View style={styles.sheetActions}>
+          <LinearGradient
+            colors={[Theme.colors.surfaceHigh, Theme.colors.surface]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.gradient}
+          >
+            <CheckIcon size={22} color={Theme.colors.primarySoft} />
+            <Text
+              style={{
+                color: Theme.colors.text,
+                fontFamily: Theme.fonts.onestBold,
+                fontSize: Theme.sizes.h4,
+              }}
+            >
+              {t("already_friends")}
+            </Text>
+          </LinearGradient>
+
+          <SecondaryButton
+            title={t("remove_friend")}
+            onPress={() => {
+              if (selectedFriend)
+                openRemoveConfirm(selectedFriend.id, selectedFriend.name)
+            }}
+            danger
+            block
+            loading={workingId === selectedFriend?.id}
+          />
+        </View>
+      </BottomSheetModal>
+
+      <CustomModal
+        title={confirmTitle}
+        description={confirmDescription}
+        modalVisible={confirm !== null}
+        onRequestClose={() => setConfirm(null)}
+        onAccept={confirmAccept}
+        acceptLabel={confirmAcceptLabel}
+        danger={confirm?.type !== "cancel"}
+      />
     </Screen>
   )
 }
@@ -640,6 +767,50 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: 2,
   },
+  rowTap: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Theme.spacing.m,
+  },
+  sheetCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Theme.spacing.m,
+    padding: Theme.spacing.l,
+    borderRadius: Theme.radii.xl,
+    borderWidth: 1,
+    borderColor: Theme.colors.borderSoft,
+    marginBottom: Theme.spacing.l,
+  },
+  sheetAvatar: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: Theme.colors.surfaceHigh,
+    borderWidth: 1,
+    borderColor: Theme.colors.borderSoft,
+    alignItems: "center",
+    justifyContent: "center",
+    overflow: "hidden",
+  },
+  sheetText: {
+    flex: 1,
+    gap: 2,
+  },
+  sheetName: {
+    color: Theme.colors.text,
+    fontFamily: Theme.fonts.onestBold,
+    fontSize: Theme.sizes.h3,
+  },
+  sheetId: {
+    color: Theme.colors.gray,
+    fontFamily: Theme.fonts.onest,
+    fontSize: Theme.sizes.h6,
+  },
+  sheetActions: {
+    gap: Theme.spacing.s,
+  },
   rowTitle: {
     color: Theme.colors.lightGray,
     fontFamily: Theme.fonts.onestBold,
@@ -708,5 +879,14 @@ const styles = StyleSheet.create({
     backgroundColor: Theme.colors.borderSoft,
     marginLeft: 64,
     opacity: 0.6,
+  },
+  gradient: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: Theme.spacing.s,
+    paddingVertical: Theme.spacing.m,
+    paddingHorizontal: Theme.spacing.xl,
+    opacity: 0.8,
   },
 })

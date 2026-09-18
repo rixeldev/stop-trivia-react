@@ -22,6 +22,15 @@ export const RestartIcon = (props: any) => (
   />
 )
 
+export const RefreshIcon = (props: any) => (
+  <MaterialCommunityIcons
+    name="refresh"
+    color={Theme.colors.text}
+    size={24}
+    {...props}
+  />
+)
+
 export const UpdateIcon = (props: any) => (
   <MaterialCommunityIcons
     name="update"

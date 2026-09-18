@@ -69,11 +69,12 @@ tests/e2e/        # Detox E2E tests (separate npm package)
 ## Friends System
 
 - Profile/docs live under `users/{uid}`:
-  - `users/{uid}` — profile doc created/refreshed on app open via `Fire.ensureProfile` (name, photoURL, email). Used to resolve "add friend by ID".
+  - `users/{uid}` — profile doc created **only** by the login flows (`Fire.markProfileSaved`) on Google/email sign-in or sign-up (name, photoURL, email, `registered: true`). Its existence in `users` is what marks the user as saved; add-by-ID resolution reads it.
   - `users/{uid}/friends/{friendUid}` — accepted friendship `{ name, photoURL, addedAt }`.
   - `users/{uid}/receivedRequests/{fromUid}` — incoming requests `{ fromName, fromPhotoURL, sentAt }`.
   - `users/{uid}/sentRequests/{toUid}` — outgoing requests `{ toName, toPhotoURL, sentAt }`.
-- `db/Fire.ts` API: `ensureProfile`, `getFriendProfile`, `onFriends`/`onReceivedRequests`/`onSentRequests` (onSnapshot subscriptions), `sendFriendRequest`, `acceptFriendRequest`, `declineFriendRequest`, `cancelFriendRequest`, `removeFriend`. The first two and accept/remove run in `runTransaction`s; decline/cancel are direct `deleteDoc`s.
+- `db/Fire.ts` API: `markProfileSaved`, `onProfileSaved`, `getFriendProfile`, `onFriends`/`onReceivedRequests`/`onSentRequests` (onSnapshot subscriptions), `sendFriendRequest`, `acceptFriendRequest`, `declineFriendRequest`, `cancelFriendRequest`, `removeFriend`. `markProfileSaved` and accept/remove run in `runTransaction`s; decline/cancel are direct `deleteDoc`s.
+- **Reauth gate**: `app/_layout.tsx` subscribes to `onProfileSaved` (checks the `users/{uid}` doc exists). When a logged-in user has **no doc in `users`**, a non-dismissable `ProfileSyncModal` (full-screen, `onRequestClose` no-op) appears. Its button signs the user out, dropping them on the login page; logging in again calls `markProfileSaved` (doc now exists) and the modal never returns. The modal is only rendered inside the app shell, so the "update required" screen (`AppVersionUpdate`) always takes precedence.
 - `hooks/useFriends(uid)` subscribes to all three subcollections and returns `{ friends, received, sent, friendsIds, receivedIds, sentIds, isFriend }` — shared by `app/friends.tsx` and `components/PlayerInfoSheet.tsx`.
 - UX: tapping another player in a stop room opens `PlayerInfoSheet` (BottomSheetModal) with that player's info and a contextual friend action (Add / Accept / Cancel / Remove); `app/friends.tsx` (reachable from Settings) lists friends and requests and supports adding by user ID.
 - All friend subcollection docs are keyed by Firebase UID; profile data from a game's `players[]` (id/name/photoURL) is embedded in requests so friend discovery from a room works even if the target has no `users/{uid}` doc yet.

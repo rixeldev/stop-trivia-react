@@ -9,6 +9,8 @@ interface Props {
   modalVisible: boolean
   onRequestClose: () => void
   onAccept: () => void
+  acceptLabel?: string
+  danger?: boolean
 }
 
 export const CustomModal = ({
@@ -17,6 +19,8 @@ export const CustomModal = ({
   modalVisible,
   onRequestClose,
   onAccept,
+  acceptLabel,
+  danger = false,
 }: Props) => {
   const { t } = useTranslation()
 
@@ -61,13 +65,15 @@ export const CustomModal = ({
               ]}
             >
               <LinearGradient
-                colors={Theme.gradients.primary}
+                colors={
+                  danger ? Theme.gradients.danger : Theme.gradients.primary
+                }
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={styles.acceptGradient}
               >
                 <Text style={[styles.actionText, { color: Theme.colors.text }]}>
-                  {t("accept")}
+                  {acceptLabel ?? t("accept")}
                 </Text>
               </LinearGradient>
             </Pressable>

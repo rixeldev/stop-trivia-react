@@ -43,6 +43,7 @@ import { auth, storage } from "@/db/firebaseConfig"
 import { useTranslation } from "react-i18next"
 import { Updaloading } from "@/components/Uploading"
 import * as ImagePicker from "expo-image-picker"
+import * as RNLocalize from "react-native-localize"
 import NetInfo from "@react-native-community/netinfo"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import {
@@ -57,25 +58,30 @@ const languageCodes = ["en", "es"]
 const appVersion = pkg.expo.android.version
 
 export default function Settings() {
+  const locales = RNLocalize.getLocales()
+  const localeCode = locales?.[0]?.languageCode === "es" ? "es" : "en"
+
   const [isVibrationEnabled, setIsVibrationEnabled] = useState(false)
-  const [languageSelected, setLanguageSelected] = useState<string>("en")
+  const [languageSelected, setLanguageSelected] = useState<string>(localeCode)
   const [image, setImage] = useState("")
   const [progress, setProgress] = useState(0)
   const [modalVisible, setModalVisible] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [connection, setConnection] = useState(true)
   const [userName, setUserName] = useState<string | null | undefined>(
-    "Anon-12345678"
+    "Anon-12345678",
   )
   const [userId, setUserId] = useState<string | undefined>(
-    "1234567890101112131415"
+    "1234567890101112131415",
   )
   const [userEmail, setUserEmail] = useState<string | undefined>(
-    "email@email.com"
+    "email@email.com",
   )
 
   const { t, i18n } = useTranslation()
   const { setItem, getItem } = useStorage()
+
+  const languageLabel = languageSelected === "es" ? t("es") : t("en")
 
   const sheetRef = useRef<BottomSheet>(null)
   const navigation = useNavigation()
@@ -87,7 +93,7 @@ export default function Settings() {
       const languageCode = await getItem("language")
 
       setIsVibrationEnabled(parseBoolean(vibrationValue))
-      setLanguageSelected(languageCode ?? "en")
+      setLanguageSelected(languageCode ?? localeCode)
       setUserId(auth.currentUser?.uid)
       setUserEmail(auth.currentUser?.email ?? "email@email.com")
       setUserName(auth.currentUser?.displayName)
@@ -124,7 +130,7 @@ export default function Settings() {
     ToastAndroid.showWithGravity(
       t("copied_clipboard"),
       ToastAndroid.SHORT,
-      ToastAndroid.CENTER
+      ToastAndroid.CENTER,
     )
   }
 
@@ -156,7 +162,7 @@ export default function Settings() {
       ToastAndroid.showWithGravity(
         t("you_are_offline"),
         ToastAndroid.SHORT,
-        ToastAndroid.CENTER
+        ToastAndroid.CENTER,
       )
       return
     }
@@ -183,7 +189,7 @@ export default function Settings() {
         ToastAndroid.showWithGravity(
           t("error_uploading"),
           ToastAndroid.SHORT,
-          ToastAndroid.CENTER
+          ToastAndroid.CENTER,
         )
       },
       () => {
@@ -194,7 +200,7 @@ export default function Settings() {
           setProgress(0)
           setUploading(false)
         })
-      }
+      },
     )
   }
 
@@ -228,8 +234,6 @@ export default function Settings() {
       console.log("Error sharing:", error.message)
     }
   }
-
-  const languageLabel = languageSelected === "es" ? t("es") : t("en")
 
   return (
     <Screen padding={0}>
@@ -330,7 +334,10 @@ export default function Settings() {
 
         <View style={styles.group}>
           <Pressable
-            style={({ pressed }) => [styles.row, { opacity: pressed ? 0.7 : 1 }]}
+            style={({ pressed }) => [
+              styles.row,
+              { opacity: pressed ? 0.7 : 1 },
+            ]}
             onPress={toggleVibrationSwitch}
           >
             <View style={styles.iconTile}>
@@ -361,7 +368,10 @@ export default function Settings() {
           <View style={styles.divider} />
 
           <Pressable
-            style={({ pressed }) => [styles.row, { opacity: pressed ? 0.7 : 1 }]}
+            style={({ pressed }) => [
+              styles.row,
+              { opacity: pressed ? 0.7 : 1 },
+            ]}
             onPress={() => sheetRef.current?.expand()}
           >
             <View style={styles.iconTile}>
@@ -408,7 +418,7 @@ export default function Settings() {
           <Row
             onPress={() =>
               Linking.openURL(
-                "https://play.google.com/store/apps/details?id=com.rilisentertainment.stoptriviaonline"
+                "https://play.google.com/store/apps/details?id=com.rilisentertainment.stoptriviaonline",
               )
             }
             title={t("rate_game")}

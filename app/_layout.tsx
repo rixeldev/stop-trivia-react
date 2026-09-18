@@ -27,6 +27,7 @@ import { Onboarding } from "@/components/Onboarding"
 import { parseBoolean } from "@/libs/parseBoolean"
 import Fire from "@/db/Fire"
 import { useFriends } from "@/hooks/useFriends"
+import { ProfileSyncModal } from "@/components/ProfileSyncModal"
 
 export default function Layout() {
   const [isAppReady, setIsAppReady] = useState(false)
@@ -35,6 +36,8 @@ export default function Layout() {
   const [user, setUser] = useState<FirebaseAuthTypes.User | null>(null)
   const [loading, setLoading] = useState<boolean>(true)
   const [firstTime, setFirstTime] = useState<boolean | null>(null)
+  const [profileChecked, setProfileChecked] = useState(false)
+  const [profileSaved, setProfileSaved] = useState(false)
 
   const { received } = useFriends(user?.uid)
 
@@ -47,7 +50,13 @@ export default function Layout() {
   }
 
   useEffect(() => {
-    if (user) Fire.ensureProfile(user)
+    if (!user?.uid) return
+    setProfileChecked(false)
+    const unsubscribe = Fire.onProfileSaved(user.uid, (saved) => {
+      setProfileSaved(saved)
+      setProfileChecked(true)
+    })
+    return unsubscribe
   }, [user])
 
   useEffect(() => {
@@ -249,6 +258,8 @@ export default function Layout() {
           </View>
         )}
       </GestureHandlerRootView>
+
+      {profileChecked && user && !profileSaved && <ProfileSyncModal visible />}
     </SafeAreaProvider>
   )
 }

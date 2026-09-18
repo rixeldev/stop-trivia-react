@@ -40,6 +40,7 @@ import { auth } from "@/db/firebaseConfig"
 import { useTranslation } from "react-i18next"
 import { GoogleSignin } from "@react-native-google-signin/google-signin"
 import { Screen } from "@/components/ui/Screen"
+import Fire from "@/db/Fire"
 
 export const LoginForm = () => {
   const [email, setEmail] = useState("")
@@ -79,6 +80,9 @@ export const LoginForm = () => {
       const idToken = signInResult.data?.idToken
       const googleCredentials = GoogleAuthProvider.credential(idToken)
       await signInWithCredential(getAuth(), googleCredentials)
+
+      const currentUser = getAuth().currentUser
+      if (currentUser) await Fire.markProfileSaved(currentUser)
     } catch (error: any) {
       console.log(error)
     } finally {
@@ -167,6 +171,7 @@ export const LoginForm = () => {
     try {
       if (signInForm) {
         await signInWithEmailAndPassword(auth, email, password)
+        if (auth.currentUser) await Fire.markProfileSaved(auth.currentUser)
       } else {
         if (password === repeatPassword) {
           await createUserWithEmailAndPassword(auth, email, password).then(
@@ -175,6 +180,7 @@ export const LoginForm = () => {
                 displayName: displayName.trim(),
               })
               sendEmailVerification(res.user)
+              Fire.markProfileSaved(res.user)
               ToastAndroid.showWithGravity(
                 t("verification_email_sent"),
                 ToastAndroid.SHORT,

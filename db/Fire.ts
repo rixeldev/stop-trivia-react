@@ -269,24 +269,6 @@ class Fire {
     return serverNow - (t1 - latency)
   }
 
-  ensureProfile = async (user: {
-    uid: string
-    displayName?: string | null
-    photoURL?: string | null
-    email?: string | null
-  }): Promise<void> => {
-    if (!user?.uid) return
-    const ref = doc(db, "users", user.uid)
-    const data: Record<string, unknown> = {
-      uid: user.uid,
-      updatedAt: serverTimestamp(),
-    }
-    if (user.displayName) data.name = user.displayName
-    if (user.photoURL) data.photoURL = user.photoURL
-    if (user.email) data.email = user.email
-    await setDoc(ref, data, { merge: true })
-  }
-
   getFriendProfile = async (uid: string): Promise<FriendProfile | null> => {
     const ref = doc(db, "users", uid)
     const snap = await getDoc(ref)
@@ -298,6 +280,32 @@ class Fire {
       photoURL: data.photoURL ?? null,
       email: data.email ?? null,
     }
+  }
+
+  markProfileSaved = async (user: {
+    uid: string
+    displayName?: string | null
+    photoURL?: string | null
+    email?: string | null
+  }): Promise<void> => {
+    if (!user?.uid) return
+    const ref = doc(db, "users", user.uid)
+    const data: Record<string, unknown> = {
+      registered: true,
+      updatedAt: serverTimestamp(),
+    }
+    if (user.displayName) data.name = user.displayName
+    if (user.photoURL) data.photoURL = user.photoURL
+    if (user.email) data.email = user.email
+    await setDoc(ref, data, { merge: true })
+  }
+
+  onProfileSaved = (uid: string, callback: (saved: boolean) => void) => {
+    const ref = doc(db, "users", uid)
+    const unsubscribe = onSnapshot(ref, (snapshot) => {
+      callback(snapshot.exists())
+    })
+    return unsubscribe
   }
 
   onFriends = (uid: string, callback: (entries: FriendEntry[]) => void) => {

@@ -56,6 +56,7 @@ import {
 } from "@react-native-firebase/storage"
 import { Screen } from "@/components/ui/Screen"
 import { LinearGradient } from "expo-linear-gradient"
+import { useFriends } from "@/hooks/useFriends"
 
 const languageCodes = ["en", "es"]
 const appVersion = pkg.expo.android.version
@@ -83,6 +84,7 @@ export default function Settings() {
 
   const { t, i18n } = useTranslation()
   const { setItem, getItem } = useStorage()
+  const { received } = useFriends(auth.currentUser?.uid)
 
   const languageLabel = languageSelected === "es" ? t("es") : t("en")
 
@@ -461,6 +463,7 @@ export default function Settings() {
             title={t("friends")}
             description={t("friends_desc")}
             icon={<UsersIcon size={20} color={Theme.colors.primarySoft} />}
+            badge={received.length}
           />
 
           <View style={styles.divider} />
@@ -652,11 +655,13 @@ const Row = ({
   title,
   description,
   icon,
+  badge,
 }: {
   onPress: () => void
   title: string
   description?: string
   icon: React.ReactNode
+  badge?: number
 }) => {
   return (
     <Pressable
@@ -674,9 +679,20 @@ const Row = ({
         )}
       </View>
 
-      <View style={styles.valuePill}>
-        <ForwardIcon size={16} color={Theme.colors.darkGray} />
-      </View>
+      {badge && badge > 0 ? (
+        <View style={styles.valuePill}>
+          <View style={styles.rowBadge}>
+            <Text style={styles.rowBadgeText}>
+              {badge > 99 ? "99+" : badge}
+            </Text>
+          </View>
+          <ForwardIcon size={16} color={Theme.colors.darkGray} />
+        </View>
+      ) : (
+        <View style={styles.valuePill}>
+          <ForwardIcon size={16} color={Theme.colors.darkGray} />
+        </View>
+      )}
     </Pressable>
   )
 }
@@ -847,6 +863,22 @@ const styles = StyleSheet.create({
     fontFamily: Theme.fonts.onestBold,
     fontSize: Theme.sizes.h6,
     letterSpacing: 1,
+  },
+  rowBadge: {
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    paddingHorizontal: 4,
+    backgroundColor: Theme.colors.red,
+    borderWidth: 1,
+    borderColor: Theme.colors.background,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  rowBadgeText: {
+    color: Theme.colors.text,
+    fontFamily: Theme.fonts.onestBold,
+    fontSize: 10,
   },
   divider: {
     height: 1,

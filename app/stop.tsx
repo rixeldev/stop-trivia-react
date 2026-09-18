@@ -41,11 +41,7 @@ import { PlayingButton } from "@/components/PlayingButton"
 import { Badge } from "@/components/ui/Badge"
 import Fire from "@/db/Fire"
 import { sixDigit } from "@/libs/randomId"
-import {
-  StopModel,
-  GameStatus,
-  StopReviewSubmission,
-} from "@/interfaces/Game"
+import { StopModel, GameStatus, StopReviewSubmission } from "@/interfaces/Game"
 import { ReviewWizard } from "@/components/ReviewWizard"
 import { getAuth } from "@react-native-firebase/auth"
 import { formatTime } from "@/libs/formatTime"
@@ -105,8 +101,7 @@ export default function Stop() {
   const [idModalVisible, setIdModalVisible] = useState<boolean>(true)
   const [copied, setCopied] = useState<boolean>(false)
   const [myChoice, setMyChoice] = useState<boolean | null>(null)
-  const [myReviewSubmitted, setMyReviewSubmitted] =
-    useState<boolean>(false)
+  const [myReviewSubmitted, setMyReviewSubmitted] = useState<boolean>(false)
   const [winner, setWinner] = useState<StopPlayer | null>(null)
   const [inputs, setInputs] = useState({
     name: "",
@@ -655,12 +650,11 @@ export default function Stop() {
       return true
     }
 
-    if (mode === "offline") handleOnExit()
-    if (!currentData) return true
-    if (currentData.gameStatus === GameStatus.IN_PROGRESS) {
-      vibrationEnabled.current && Vibration.vibrate(100)
+    if (mode === "offline") {
+      handleOnExit()
       return true
     }
+    if (!currentData) return false
 
     if (currentData.players.length <= 1) {
       handleOnExit()
@@ -802,8 +796,7 @@ export default function Stop() {
       player.inputs !== undefined && player.inputsRound === gameData?.round,
   )
   const hasSubmittedReview =
-    myReviewSubmitted ||
-    !!gameData?.reviews?.[getAuth().currentUser?.uid ?? ""]
+    myReviewSubmitted || !!gameData?.reviews?.[getAuth().currentUser?.uid ?? ""]
   const displayedPoints =
     mode === "offline"
       ? points
@@ -1097,16 +1090,17 @@ export default function Stop() {
                 />
               )}
 
-              {mode === "offline" && gameData?.gameStatus !== GameStatus.IN_PROGRESS && (
-                <ActionButton
-                  flag="restart"
-                  label="Restart"
-                  onPress={() => handlePress("restart")}
-                  icon={
-                    <RestartIcon size={24} color={Theme.colors.secondary} />
-                  }
-                />
-              )}
+              {mode === "offline" &&
+                gameData?.gameStatus !== GameStatus.IN_PROGRESS && (
+                  <ActionButton
+                    flag="restart"
+                    label="Restart"
+                    onPress={() => handlePress("restart")}
+                    icon={
+                      <RestartIcon size={24} color={Theme.colors.secondary} />
+                    }
+                  />
+                )}
             </View>
           </View>
         </ScrollView>

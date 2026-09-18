@@ -74,7 +74,7 @@ export default function TTT() {
   const [idModalVisible, setIdModalVisible] = useState<boolean>(true)
   const [copied, setCopied] = useState<boolean>(false)
   const [btnScales] = useState(() =>
-    initialBoard.map(() => new Animated.Value(1))
+    initialBoard.map(() => new Animated.Value(1)),
   )
 
   const navigation = useNavigation()
@@ -131,7 +131,7 @@ export default function TTT() {
       const backPress = () => handleBackPress()
       backHandlerRef.current = BackHandler.addEventListener(
         "hardwareBackPress",
-        backPress
+        backPress,
       )
 
       loadSettings()
@@ -142,7 +142,7 @@ export default function TTT() {
           backHandlerRef.current = null
         }
       }
-    }, [])
+    }, [gameData, mode]),
   )
 
   useEffect(() => {
@@ -199,7 +199,6 @@ export default function TTT() {
     let gameId = id
     let unsubscribe: (() => void) | undefined
     let connectionUnsubscribe: (() => void) | undefined
-    let backHandler: NativeEventSubscription
     let currentGameData: TTTModel
 
     connectionUnsubscribe = NetInfo.addEventListener((state) => {
@@ -213,7 +212,7 @@ export default function TTT() {
       () => {
         setLoaded(true)
         interstitial.show()
-      }
+      },
     )
 
     const unsubscribeOpened = interstitial.addAdEventListener(
@@ -222,7 +221,7 @@ export default function TTT() {
         if (Platform.OS === "ios") {
           StatusBar.setHidden(true)
         }
-      }
+      },
     )
 
     const unsubscribeClosed = interstitial.addAdEventListener(
@@ -231,7 +230,7 @@ export default function TTT() {
         if (Platform.OS === "ios") {
           StatusBar.setHidden(false)
         }
-      }
+      },
     )
 
     interstitial.load()
@@ -284,13 +283,6 @@ export default function TTT() {
 
     if (mode === "offline" || mode === "computer") {
       myId.current = POS.X
-      const backPress = (): boolean => {
-        return handleBackPress(currentGameData)
-      }
-
-      backHandler = BackHandler.addEventListener("hardwareBackPress", backPress)
-
-      return
     }
 
     if (mode !== "offline" && mode !== "computer") {
@@ -300,7 +292,7 @@ export default function TTT() {
             ToastAndroid.showWithGravity(
               t("host_closed_game"),
               ToastAndroid.SHORT,
-              ToastAndroid.CENTER
+              ToastAndroid.CENTER,
             )
             navigation.goBack()
             if (timerRef.current) clearInterval(timerRef.current)
@@ -341,15 +333,6 @@ export default function TTT() {
             })
           }
         }
-
-        const backPress = (): boolean => {
-          return handleBackPress(currentGameData)
-        }
-
-        backHandler = BackHandler.addEventListener(
-          "hardwareBackPress",
-          backPress
-        )
       })
     }
 
@@ -371,8 +354,6 @@ export default function TTT() {
       roomId.current = null
 
       if (timerRef.current) clearInterval(timerRef.current)
-      if (backHandler) backHandler.remove()
-
       if (mode === "online" && gameId) {
         Fire.deleteGame("tttt", gameId)
       }
@@ -381,7 +362,7 @@ export default function TTT() {
         Fire.updateGame("tttt", gameId, {
           players: currentGameData
             ? currentGameData.players.filter(
-                (player) => player.id !== getAuth().currentUser?.uid
+                (player) => player.id !== getAuth().currentUser?.uid,
               )
             : [],
         }).catch(() => null)
@@ -415,12 +396,11 @@ export default function TTT() {
   const handleBackPress = (data?: TTTModel | null): boolean => {
     const currentData = data ?? gameData
 
-    if (mode === "offline" || mode === "computer") handleOnExit()
-    if (!currentData) return true
-    if (currentData.gameStatus === GameStatus.IN_PROGRESS) {
-      vibrationEnabled.current && Vibration.vibrate(100)
+    if (mode === "offline" || mode === "computer") {
+      handleOnExit()
       return true
     }
+    if (!currentData) return false
 
     if (currentData.players.length <= 1) {
       handleOnExit()
@@ -448,7 +428,7 @@ export default function TTT() {
         ToastAndroid.showWithGravity(
           t("not_your_turn"),
           ToastAndroid.SHORT,
-          ToastAndroid.CENTER
+          ToastAndroid.CENTER,
         )
         return
       }
@@ -536,7 +516,7 @@ export default function TTT() {
     ToastAndroid.showWithGravity(
       t("copied_clipboard"),
       ToastAndroid.SHORT,
-      ToastAndroid.CENTER
+      ToastAndroid.CENTER,
     )
   }
 
@@ -714,7 +694,10 @@ export default function TTT() {
                   colors={
                     data
                       ? Theme.gradients.cardHigh
-                      : [Theme.colors.surface, Theme.colors.surfaceHigh] as const
+                      : ([
+                          Theme.colors.surface,
+                          Theme.colors.surfaceHigh,
+                        ] as const)
                   }
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 1 }}

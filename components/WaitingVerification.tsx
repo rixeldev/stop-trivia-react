@@ -5,20 +5,20 @@ import {
   ActivityIndicator,
   StyleSheet,
   ToastAndroid,
-  Animated,
-  Pressable,
 } from "react-native"
 import { Theme } from "@/constants/Theme"
-import { VerifiedIcon } from "./ui/Icons"
+import { LogoutIcon, VerifiedIcon } from "./ui/Icons"
 import { useTranslation } from "react-i18next"
 import { auth } from "@/db/firebaseConfig"
 import { sendEmailVerification, signOut } from "@react-native-firebase/auth"
 import { router } from "expo-router"
+import { Screen } from "@/components/ui/Screen"
+import { PrimaryButton } from "@/components/ui/PrimaryButton"
+import { SecondaryButton } from "@/components/ui/SecondaryButton"
 
 export const WaitingVerification = () => {
   const [checking, setChecking] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [btnScale] = useState(new Animated.Value(1))
 
   const { t } = useTranslation()
 
@@ -46,11 +46,6 @@ export const WaitingVerification = () => {
 
     return () => clearInterval(interval)
   }, [])
-
-  const handlePressIn = () =>
-    Animated.spring(btnScale, { toValue: 0.97, useNativeDriver: true }).start()
-  const handlePressOut = () =>
-    Animated.spring(btnScale, { toValue: 1, useNativeDriver: true }).start()
 
   const handleResendEmail = async () => {
     if (!auth.currentUser) return
@@ -80,83 +75,69 @@ export const WaitingVerification = () => {
   }
 
   return (
-    <View style={styles.container}>
-      <VerifiedIcon color={Theme.colors.accent} size={132} />
-      <Text style={styles.title}>{t("verify_your_email")}</Text>
-      <Text style={styles.subtitle}>
-        {t("verify_your_email_desc_1")}
-        {"\n"}
-        {t("verify_your_email_desc_2")}
-      </Text>
-      <ActivityIndicator
-        size="large"
-        color={Theme.colors.primary}
-        style={styles.loader}
-      />
-      <Text style={styles.hint}>{t("waiting_verification")}</Text>
-      <Animated.View
-        style={{ transform: [{ scale: btnScale }], width: "100%" }}
-      >
-        <Pressable
-          onPressIn={handlePressIn}
-          onPressOut={handlePressOut}
+    <Screen padding={0}>
+      <View style={styles.container}>
+        <View style={styles.iconWrap}>
+          <VerifiedIcon color={Theme.colors.primarySoft} size={72} />
+        </View>
+
+        <Text style={styles.title}>{t("verify_your_email")}</Text>
+        <Text style={styles.subtitle}>
+          {t("verify_your_email_desc_1")}
+          {"\n"}
+          {t("verify_your_email_desc_2")}
+        </Text>
+
+        <View style={styles.loaderWrap}>
+          <ActivityIndicator size="small" color={Theme.colors.primarySoft} />
+          <Text style={styles.hint}>{t("waiting_verification")}</Text>
+        </View>
+
+        <PrimaryButton
+          block
+          title={t("resend_email_verification")}
           onPress={handleResendEmail}
-          style={({ pressed }) => [
-            styles.submit,
-            pressed && { opacity: 0.9 },
-            loading && { opacity: 0.8 },
-          ]}
-          accessibilityRole="button"
-          accessibilityLabel="Sign in"
-        >
-          {loading ? (
-            <ActivityIndicator
-              color={Theme.colors.text}
-              style={{ width: 32, height: 32 }}
-            />
-          ) : (
-            <Text style={styles.submitText}>
-              {t("resend_email_verification")}
-            </Text>
-          )}
-        </Pressable>
-      </Animated.View>
-      <Pressable
-        onPressIn={handlePressIn}
-        onPressOut={handlePressOut}
-        onPress={handleSignOut}
-        style={({ pressed }) => [
-          styles.signout,
-          pressed && { opacity: 0.9 },
-          loading && { opacity: 0.8 },
-        ]}
-        accessibilityRole="button"
-        accessibilityLabel="Sign in"
-      >
-        {loading ? (
-          <ActivityIndicator color={Theme.colors.text} />
-        ) : (
-          <Text style={styles.submitText}>{t("sign_out")}</Text>
-        )}
-      </Pressable>
-    </View>
+          loading={loading}
+        />
+
+        <SecondaryButton
+          block
+          danger
+          title={t("sign_out")}
+          onPress={handleSignOut}
+          icon={<LogoutIcon size={18} color={Theme.colors.red} />}
+        />
+      </View>
+    </Screen>
   )
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Theme.colors.background,
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 24,
-    gap: 12,
+    padding: Theme.spacing.xxl,
+    gap: Theme.spacing.l,
+  },
+  iconWrap: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: Theme.colors.surfaceHigh,
+    borderWidth: 1,
+    borderColor: Theme.colors.borderSoft,
+    alignItems: "center",
+    justifyContent: "center",
+    ...Theme.shadows.glow,
+    marginBottom: Theme.spacing.m,
   },
   title: {
-    fontSize: Theme.sizes.h1,
+    fontSize: Theme.sizes.display,
     fontFamily: Theme.fonts.onestBold,
     color: Theme.colors.text,
-    marginBottom: 12,
+    textAlign: "center",
+    marginBottom: Theme.spacing.xs,
   },
   subtitle: {
     fontSize: Theme.sizes.h4,
@@ -164,41 +145,23 @@ const styles = StyleSheet.create({
     color: Theme.colors.gray,
     textAlign: "center",
     lineHeight: 22,
-    marginBottom: 32,
+    marginBottom: Theme.spacing.l,
   },
-  loader: {
-    marginBottom: 16,
+  loaderWrap: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Theme.spacing.s,
+    backgroundColor: Theme.colors.surface,
+    borderWidth: 1,
+    borderColor: Theme.colors.borderSoft,
+    borderRadius: Theme.radii.pill,
+    paddingVertical: Theme.spacing.s,
+    paddingHorizontal: Theme.spacing.l,
+    marginBottom: Theme.spacing.m,
   },
   hint: {
     fontSize: Theme.sizes.h5,
     color: Theme.colors.gray,
     fontFamily: Theme.fonts.onest,
-  },
-  submit: {
-    backgroundColor: Theme.colors.primary,
-    padding: 14,
-    borderRadius: 14,
-    alignItems: "center",
-    marginTop: 6,
-    marginBottom: 12,
-    flexDirection: "row",
-    justifyContent: "center",
-    gap: 8,
-  },
-  submitText: {
-    color: Theme.colors.text,
-    fontSize: Theme.sizes.h4,
-    fontFamily: Theme.fonts.onestBold,
-  },
-  signout: {
-    backgroundColor: Theme.colors.red,
-    padding: 14,
-    borderRadius: 14,
-    alignItems: "center",
-    marginTop: 6,
-    marginBottom: 12,
-    flexDirection: "row",
-    justifyContent: "center",
-    gap: 8,
   },
 })

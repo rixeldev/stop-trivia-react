@@ -47,30 +47,30 @@ export function Onboarding({ onDone }: Props) {
       title: t("onboarding.title0"),
       text: t("onboarding.text0"),
       backgroundColor1: Theme.colors.background,
-      backgroundColor2: Theme.colors.modal,
+      backgroundColor2: Theme.colors.surface,
     },
     {
       key: "1",
       title: t("onboarding.title1"),
       text: t("onboarding.text1"),
       image: OnboardingImages[language].modes,
-      backgroundColor1: Theme.colors.modal,
-      backgroundColor2: Theme.colors.background2,
+      backgroundColor1: Theme.colors.surface,
+      backgroundColor2: Theme.colors.background,
     },
     {
       key: "2",
       title: t("onboarding.title2"),
       text: t("onboarding.text2"),
       image: OnboardingImages[language].avatar,
-      backgroundColor1: Theme.colors.background2,
-      backgroundColor2: Theme.colors.modal,
+      backgroundColor1: Theme.colors.background,
+      backgroundColor2: Theme.colors.surface,
     },
     {
       key: "3",
       title: t("onboarding.title3"),
       text: t("onboarding.text3"),
       image: OnboardingImages[language].stop,
-      backgroundColor1: Theme.colors.modal,
+      backgroundColor1: Theme.colors.surface,
       backgroundColor2: Theme.colors.background,
     },
   ]
@@ -93,7 +93,12 @@ export function Onboarding({ onDone }: Props) {
               autoPlay
               loop={false}
               duration={3000}
-              style={{ width: "50%", aspectRatio: 1, marginVertical: 12 }}
+              style={{
+                width: "46%",
+                aspectRatio: 1,
+                marginVertical: Theme.spacing.l,
+                ...Theme.shadows.glow,
+              }}
             />
           )}
 
@@ -107,15 +112,19 @@ export function Onboarding({ onDone }: Props) {
     )
   }
 
-  const buttonLabel = (label: string) => {
+  const buttonLabel = (label: string, primary = false) => {
     return (
-      <View style={{ padding: 12 }}>
+      <View
+        style={[
+          styles.buttonChip,
+          primary && styles.buttonChipPrimary,
+        ]}
+      >
         <Text
-          style={{
-            color: Theme.colors.text,
-            fontFamily: Theme.fonts.onestBold,
-            fontSize: Theme.sizes.h4,
-          }}
+          style={[
+            styles.buttonText,
+            primary && styles.buttonTextPrimary,
+          ]}
         >
           {label}
         </Text>
@@ -129,11 +138,21 @@ export function Onboarding({ onDone }: Props) {
       renderItem={renderItem}
       onDone={onDone}
       showSkipButton={true}
-      activeDotStyle={{ backgroundColor: Theme.colors.accent, width: 22 }}
-      dotStyle={{ backgroundColor: Theme.colors.darkGray }}
+      activeDotStyle={{
+        backgroundColor: Theme.colors.primarySoft,
+        width: 26,
+        height: 8,
+        borderRadius: 4,
+      }}
+      dotStyle={{
+        backgroundColor: Theme.colors.darkGray,
+        width: 8,
+        height: 8,
+        borderRadius: 4,
+      }}
       renderSkipButton={() => buttonLabel(t("skip"))}
-      renderNextButton={() => buttonLabel(t("next"))}
-      renderDoneButton={() => buttonLabel(t("done"))}
+      renderNextButton={() => buttonLabel(t("next"), true)}
+      renderDoneButton={() => buttonLabel(t("done"), true)}
     />
   )
 }
@@ -145,23 +164,51 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   title: {
-    fontSize: Theme.sizes.h0,
+    fontSize: Theme.sizes.hero,
     fontFamily: Theme.fonts.onestBold,
     color: Theme.colors.text,
-    marginBottom: 20,
+    marginBottom: Theme.spacing.m,
+    paddingHorizontal: Theme.spacing.xl,
+    textAlign: "center",
+    textShadowColor: Theme.colors.primary,
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 14,
   },
   text: {
     fontSize: Theme.sizes.h4,
     fontFamily: Theme.fonts.onest,
     color: Theme.colors.gray,
     textAlign: "center",
-    paddingHorizontal: 20,
+    paddingHorizontal: Theme.spacing.xxxl,
+    lineHeight: 22,
   },
   image: {
     width: 400,
     height: 400,
     resizeMode: "contain",
-    marginBottom: 40,
+    marginBottom: Theme.spacing.xl,
+  },
+  buttonChip: {
+    paddingVertical: Theme.spacing.s,
+    paddingHorizontal: Theme.spacing.l,
+    borderRadius: Theme.radii.pill,
+    borderWidth: 1,
+    borderColor: Theme.colors.borderSoft,
+    backgroundColor: Theme.colors.surface,
+  },
+  buttonChipPrimary: {
+    backgroundColor: Theme.colors.surfaceHigh,
+    borderColor: Theme.colors.primarySoft,
+  },
+  buttonText: {
+    color: Theme.colors.gray,
+    fontFamily: Theme.fonts.onest,
+    fontSize: Theme.sizes.h4,
+  },
+  buttonTextPrimary: {
+    color: Theme.colors.primarySoft,
+    fontFamily: Theme.fonts.onestBold,
+    fontSize: Theme.sizes.h4,
   },
   mainContent: {
     flex: 1,

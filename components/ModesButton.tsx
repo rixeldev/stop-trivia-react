@@ -8,6 +8,7 @@ import {
   Animated,
 } from "react-native"
 import { ForwardIcon } from "@/components/ui/Icons"
+import { Badge } from "@/components/ui/Badge"
 import React, { ReactElement, useEffect, useRef, useState } from "react"
 import { LinearGradient } from "expo-linear-gradient"
 import { useTranslation } from "react-i18next"
@@ -64,7 +65,7 @@ export const ModesButton = ({
             useNativeDriver: true,
           }),
           Animated.timing(opacityAnim, {
-            toValue: 0.8,
+            toValue: 0.75,
             duration: 500,
             useNativeDriver: true,
           }),
@@ -81,7 +82,7 @@ export const ModesButton = ({
             useNativeDriver: true,
           }),
         ]),
-      ])
+      ]),
     ).start()
   }, [scaleAnim, opacityAnim])
 
@@ -92,44 +93,13 @@ export const ModesButton = ({
           style={{
             position: "absolute",
             zIndex: 1,
-            right: -2,
-            top: 2,
-            transform: [{ rotateZ: "18deg" }, { scale: scaleAnim }],
+            right: Theme.spacing.m,
+            top: -Theme.spacing.s,
+            transform: [{ rotateZ: "10deg" }, { scale: scaleAnim }],
             opacity: opacityAnim,
-            shadowColor: "#000",
-            shadowOpacity: 0.25,
-            shadowRadius: 6,
-            shadowOffset: { width: 0, height: 3 },
-            elevation: 5,
-            borderRadius: 6,
-            overflow: "hidden",
           }}
         >
-          <LinearGradient
-            colors={[Theme.colors.accent, Theme.colors.secondary]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={{
-              paddingHorizontal: 14,
-              paddingVertical: 4,
-              borderRadius: 6,
-            }}
-          >
-            <Animated.Text
-              style={{
-                color: "#fff",
-                fontFamily: Theme.fonts.onestBold,
-                fontSize: Theme.sizes.h4,
-                letterSpacing: 1.5,
-                textShadowColor: "rgba(0,0,0,0.3)",
-                textShadowOffset: { width: 0, height: 1 },
-                textShadowRadius: 2,
-                textTransform: "uppercase",
-              }}
-            >
-              {t("new")}
-            </Animated.Text>
-          </LinearGradient>
+          <Badge>{t("new")}</Badge>
         </Animated.View>
       )}
 
@@ -137,68 +107,45 @@ export const ModesButton = ({
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
         onPress={() => onPress(flag)}
-        style={({ pressed }) => [
-          pressed && { opacity: 0.9 },
-          styles.pressables,
-        ]}
+        style={({ pressed }) => [pressed && styles.pressed, styles.pressable]}
       >
         <LinearGradient
-          style={{
-            width: "100%",
-            height: "100%",
-            flexDirection: "row",
-          }}
-          end={{ x: 1, y: 0 }}
-          start={{ x: 0.2, y: 0 }}
-          colors={[Theme.colors.modal, Theme.colors.primary2]}
+          style={styles.card}
+          end={{ x: 1, y: 1 }}
+          start={{ x: 0, y: 0 }}
+          colors={Theme.gradients.card}
         >
           {image && (
             <Image
-              style={{
-                position: "absolute",
-                width: "100%",
-                height: "100%",
-                objectFit: "cover",
-                zIndex: -1,
-                opacity: 0.5,
-              }}
+              style={StyleSheet.absoluteFill}
+              resizeMode="cover"
               source={modeImages[image]}
             />
           )}
 
-          <View
-            style={{
-              width: "100%",
-              height: "100%",
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "space-between",
-              paddingHorizontal: 20,
-              paddingVertical: 38,
-              gap: 18,
-            }}
-          >
-            {icon}
+          {image && (
+            <LinearGradient
+              style={StyleSheet.absoluteFill}
+              colors={[
+                "rgba(2,20,18,0.55)",
+                "rgba(1,19,16,0.96)",
+                "rgba(2,23,20,0.98)",
+              ]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+            />
+          )}
 
-            <View style={{ flex: 1, gap: subtitle ? 0 : 12 }}>
-              <Text
-                style={{
-                  color: Theme.colors.text,
-                  fontSize: Theme.sizes.h2,
-                  fontFamily: Theme.fonts.onestBold,
-                }}
-              >
+          <View style={styles.content}>
+            <View style={styles.iconTile}>{icon}</View>
+
+            <View style={[styles.textWrap, { gap: subtitle ? 0 : 10 }]}>
+              <Text style={styles.title} numberOfLines={1}>
                 {title}
               </Text>
 
               {subtitle && (
-                <Text
-                  style={{
-                    color: Theme.colors.gray,
-                    fontSize: Theme.sizes.h5,
-                    fontFamily: Theme.fonts.onest,
-                  }}
-                >
+                <Text style={styles.subtitle} numberOfLines={2}>
                   {subtitle}
                 </Text>
               )}
@@ -207,9 +154,16 @@ export const ModesButton = ({
             </View>
 
             {rightIcon ? (
-              rightIcon
+              <View style={styles.iconTile}>{rightIcon}</View>
             ) : (
-              <ForwardIcon size={32} color={Theme.colors.accent} />
+              <View
+                style={[
+                  styles.arrowTile,
+                  { backgroundColor: Theme.colors.primary2 },
+                ]}
+              >
+                <ForwardIcon size={22} color={Theme.colors.primarySoft} />
+              </View>
             )}
           </View>
         </LinearGradient>
@@ -219,13 +173,57 @@ export const ModesButton = ({
 }
 
 const styles = StyleSheet.create({
-  pressables: {
-    borderRadius: 26,
+  pressable: {
+    borderRadius: Theme.radii.xxl,
+    ...Theme.shadows.md,
+  },
+  pressed: {
+    transform: [{ scale: 0.99 }],
+    opacity: 0.94,
+  },
+  card: {
+    borderRadius: Theme.radii.xxl,
+    borderWidth: 1,
+    borderColor: Theme.colors.borderSoft,
+    overflow: "hidden",
+  },
+  content: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
-    position: "relative",
-    overflow: "hidden",
-    gap: 18,
+    paddingHorizontal: Theme.spacing.l,
+    paddingVertical: Theme.spacing.xl,
+    gap: Theme.spacing.l,
+  },
+  iconTile: {
+    width: 52,
+    height: 52,
+    borderRadius: Theme.radii.lg,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: Theme.colors.surface,
+    borderWidth: 1,
+    borderColor: Theme.colors.borderSoft,
+  },
+  arrowTile: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  textWrap: {
+    flex: 1,
+  },
+  title: {
+    color: Theme.colors.text,
+    fontSize: Theme.sizes.h2,
+    fontFamily: Theme.fonts.onestBold,
+  },
+  subtitle: {
+    color: Theme.colors.gray,
+    fontSize: Theme.sizes.h5,
+    fontFamily: Theme.fonts.onest,
+    marginTop: 2,
+    lineHeight: 19,
   },
 })

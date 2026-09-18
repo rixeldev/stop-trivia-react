@@ -46,3 +46,6 @@ GoogleService-Info.plist
 
 # DB config file
 /db/firebaseConfig.ts
+
+# Implementations
+implementation_plan.md

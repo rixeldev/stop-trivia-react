@@ -1,5 +1,4 @@
 import pkg from "../app.config.js"
-import { SettingsButton } from "@/components/SettingsButton"
 import {
   BackIcon,
   CopyIcon,
@@ -15,6 +14,7 @@ import {
   ShareIcon,
   QuestionIcon,
   StarIcon,
+  ForwardIcon,
 } from "@/components/ui/Icons"
 import { Theme } from "@/constants/Theme"
 import { Stack, useNavigation } from "expo-router"
@@ -32,7 +32,6 @@ import {
   View,
   Share,
 } from "react-native"
-import { Divider } from "../components/Divider"
 import { useStorage } from "@/hooks/useStorage"
 import { parseBoolean } from "@/libs/parseBoolean"
 import { BottomSheetModal } from "@/components/BottomSheetModal"
@@ -50,6 +49,8 @@ import {
   uploadBytesResumable,
   getDownloadURL,
 } from "@react-native-firebase/storage"
+import { Screen } from "@/components/ui/Screen"
+import { LinearGradient } from "expo-linear-gradient"
 
 const languageCodes = ["en", "es"]
 const appVersion = pkg.expo.android.version
@@ -227,24 +228,28 @@ export default function Settings() {
     }
   }
 
+  const languageLabel = languageSelected === "es" ? t("es") : t("en")
+
   return (
-    <View
-      style={{
-        flex: 1,
-        backgroundColor: Theme.colors.background,
-        width: "100%",
-      }}
-    >
+    <Screen padding={0}>
       <Stack.Screen
         options={{
           headerTintColor: Theme.colors.text,
           headerTitle: t("settings"),
           headerTitleStyle: {
             fontSize: Theme.sizes.h0,
-            fontFamily: Theme.fonts.onest,
+            fontFamily: Theme.fonts.onestBold,
           },
           headerLeft: () => (
-            <BackIcon size={34} onPress={() => navigation.goBack()} />
+            <Pressable
+              onPress={() => navigation.goBack()}
+              style={({ pressed }) => [
+                styles.headerBtn,
+                { opacity: pressed ? 0.7 : 1 },
+              ]}
+            >
+              <BackIcon size={22} color={Theme.colors.primarySoft} />
+            </Pressable>
           ),
           headerRight: () => null,
         }}
@@ -259,272 +264,236 @@ export default function Settings() {
         uploading={uploading}
       />
 
-      <ScrollView style={{ flex: 1 }}>
-        <View
-          style={{
-            justifyContent: "center",
-            alignItems: "center",
-            paddingBottom: 22,
-          }}
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={styles.scrollContent}
+      >
+        <LinearGradient
+          colors={Theme.gradients.cardHigh}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.profileCard}
         >
-          <View
-            style={{
-              position: "relative",
-            }}
-          >
-            <Pressable
-              onPress={handlePickImage}
-              style={{
-                width: 96,
-                height: 96,
-                justifyContent: "center",
-                alignItems: "center",
-                backgroundColor: Theme.colors.primary2,
-                borderRadius: 100,
-                marginBottom: 4,
-                overflow: "hidden",
-              }}
-            >
-              {auth.currentUser?.photoURL ? (
-                <Image
-                  style={{
-                    width: "100%",
-                    height: "100%",
-                    resizeMode: "cover",
-                    borderRadius: 100,
-                    alignSelf: "center",
-                  }}
-                  source={{ uri: auth.currentUser?.photoURL }}
-                />
-              ) : (
-                <UserIcon size={76} color={Theme.colors.accent} />
-              )}
-            </Pressable>
+          <View style={styles.profileHeader}>
+            <View style={styles.avatarWrap}>
+              <LinearGradient
+                colors={Theme.gradients.primary}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.avatarRing}
+              >
+                <Pressable onPress={handlePickImage} style={styles.avatar}>
+                  {auth.currentUser?.photoURL ? (
+                    <Image
+                      style={styles.avatarImage}
+                      source={{ uri: auth.currentUser?.photoURL }}
+                    />
+                  ) : (
+                    <UserIcon size={52} color={Theme.colors.primarySoft} />
+                  )}
+                </Pressable>
+              </LinearGradient>
+
+              <Pressable
+                onPress={handlePickImage}
+                style={({ pressed }) => [
+                  styles.editBadge,
+                  { opacity: pressed ? 0.7 : 1 },
+                ]}
+              >
+                <EditIcon size={14} color={Theme.colors.text} />
+              </Pressable>
+            </View>
+
+            <Text style={styles.name}>{userName ?? "Stop Test"}</Text>
+            <Text style={styles.email}>{userEmail}</Text>
 
             <Pressable
-              onPress={handlePickImage}
+              onPress={copyUserId}
               style={({ pressed }) => [
-                { opacity: pressed ? 0.6 : 1 },
-                {
-                  position: "absolute",
-                  bottom: 4,
-                  right: 4,
-                  backgroundColor: Theme.colors.accent,
-                  borderRadius: 100,
-                  padding: 6,
-                  elevation: 3,
-                },
+                styles.userIdRow,
+                { opacity: pressed ? 0.7 : 1 },
               ]}
             >
-              <EditIcon color={Theme.colors.text} size={14} />
+              <Text style={styles.userId} numberOfLines={1}>
+                {userId}
+              </Text>
+              <CopyIcon size={14} color={Theme.colors.darkGray} />
             </Pressable>
           </View>
+        </LinearGradient>
 
-          <Text
-            style={{
-              color: Theme.colors.accent,
-              fontFamily: Theme.fonts.onestBold,
-              fontSize: Theme.sizes.h0,
-            }}
+        <Text style={styles.sectionLabel}>
+          {t("preferences", { defaultValue: "Preferences" })}
+        </Text>
+
+        <View style={styles.group}>
+          <Pressable
+            style={({ pressed }) => [styles.row, { opacity: pressed ? 0.7 : 1 }]}
+            onPress={toggleVibrationSwitch}
           >
-            {userName ?? "Stop Test"}
-          </Text>
+            <View style={styles.iconTile}>
+              <VibrationIcon size={20} color={Theme.colors.primarySoft} />
+            </View>
 
-          <Text
-            style={{
-              color: Theme.colors.gray,
-              fontFamily: Theme.fonts.onest,
-              fontSize: Theme.sizes.h6,
-            }}
-          >
-            {userEmail}
-          </Text>
+            <View style={styles.rowText}>
+              <Text style={styles.rowTitle}>{t("vibration")}</Text>
+              <Text style={styles.rowDescription}>{t("vibration_desc")}</Text>
+            </View>
 
-          <View
-            style={{
-              flexDirection: "row",
-              gap: 4,
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <Text
-              style={{
-                color: Theme.colors.darkGray,
-                fontFamily: Theme.fonts.onest,
-                fontSize: Theme.sizes.h6,
-              }}
-            >
-              {userId}
-            </Text>
-
-            <Pressable
-              style={({ pressed }) => [{ opacity: pressed ? 0.6 : 1 }]}
-              onPress={copyUserId}
-            >
-              <CopyIcon color={Theme.colors.darkGray} size={12} />
-            </Pressable>
-          </View>
-        </View>
-
-        <Divider />
-
-        <Pressable
-          style={({ pressed }) => [
-            {
-              backgroundColor: pressed
-                ? Theme.colors.background2
-                : Theme.colors.transparent,
-              opacity: pressed ? 0.6 : 1,
-              flexDirection: "row",
-              gap: 12,
-              alignItems: "center",
-              paddingVertical: 16,
-              padding: 16,
-            },
-          ]}
-          onPress={toggleVibrationSwitch}
-        >
-          <View>
-            <VibrationIcon color={Theme.colors.darkGray} />
-          </View>
-
-          <View style={{ flex: 1 }}>
-            <Text style={{ color: Theme.colors.gray }}>{t("vibration")}</Text>
-            <Text style={{ color: Theme.colors.darkGray }}>
-              {t("vibration_desc")}
-            </Text>
-          </View>
-
-          <View>
             <Switch
               trackColor={{
-                false: Theme.colors.darkGray,
+                false: Theme.colors.borderSoft,
                 true: Theme.colors.primary2,
               }}
               thumbColor={
-                isVibrationEnabled ? Theme.colors.primary : Theme.colors.text
+                isVibrationEnabled
+                  ? Theme.colors.primarySoft
+                  : Theme.colors.lightGray
               }
               ios_backgroundColor="#3e3e3e"
               onValueChange={toggleVibrationSwitch}
               value={isVibrationEnabled}
             />
-          </View>
-        </Pressable>
+          </Pressable>
 
-        <SettingsButton
-          onPress={() => sheetRef.current?.expand()}
-          title={t("language")}
-          description={languageSelected === "es" ? t("es") : t("en")}
-          icon={<LanguageIcon color={Theme.colors.darkGray} />}
-        />
+          <View style={styles.divider} />
 
-        <SettingsButton
-          onPress={handleShareApp}
-          title={t("invite_friends")}
-          description={t("invite_friends_desc")}
-          icon={<ShareIcon color={Theme.colors.darkGray} />}
-        />
+          <Pressable
+            style={({ pressed }) => [styles.row, { opacity: pressed ? 0.7 : 1 }]}
+            onPress={() => sheetRef.current?.expand()}
+          >
+            <View style={styles.iconTile}>
+              <LanguageIcon size={20} color={Theme.colors.primarySoft} />
+            </View>
 
-        <SettingsButton
-          onPress={() =>
-            Linking.openURL(
-              "https://play.google.com/store/apps/details?id=com.rilisentertainment.stoptriviaonline"
-            )
-          }
-          title={t("rate_game")}
-          description={t("rate_game_desc")}
-          icon={<StarIcon color={Theme.colors.darkGray} />}
-        />
+            <View style={styles.rowText}>
+              <Text style={styles.rowTitle}>{t("language")}</Text>
+              <Text style={styles.rowDescription}>{languageLabel}</Text>
+            </View>
 
-        <SettingsButton
-          onPress={() => Linking.openURL("https://rixel.dev")}
-          title={t("site")}
-          description={t("site_desc")}
-          icon={<WebIcon color={Theme.colors.darkGray} />}
-        />
+            <View style={styles.valuePill}>
+              <Text style={styles.valuePillText}>
+                {languageSelected.toUpperCase()}
+              </Text>
+              <ForwardIcon size={14} color={Theme.colors.darkGray} />
+            </View>
+          </Pressable>
+        </View>
 
-        <Divider />
+        <Text style={styles.sectionLabel}>
+          {t("community", { defaultValue: "Community" })}
+        </Text>
 
-        <SettingsButton
-          onPress={() => Linking.openURL("https://rixel.dev/privacy")}
-          title={t("privacy_policy")}
-          icon={<PrivacyIcon color={Theme.colors.darkGray} />}
-        />
+        <View style={styles.group}>
+          <Row
+            onPress={handleShareApp}
+            title={t("invite_friends")}
+            description={t("invite_friends_desc")}
+            icon={<ShareIcon size={20} color={Theme.colors.primarySoft} />}
+          />
 
-        <SettingsButton
-          onPress={() => Linking.openURL("https://rixel.dev/terms")}
-          title={t("terms_conditions")}
-          icon={<ListIcon color={Theme.colors.darkGray} />}
-        />
+          <View style={styles.divider} />
 
-        <SettingsButton
-          onPress={() =>
-            Linking.openURL("https://github.com/rixel/stop-trivia-react")
-          }
-          title="Github"
-          icon={<GithubIcon color={Theme.colors.darkGray} />}
-        />
+          <Row
+            onPress={() =>
+              Linking.openURL(
+                "https://play.google.com/store/apps/details?id=com.rilisentertainment.stoptriviaonline"
+              )
+            }
+            title={t("rate_game")}
+            description={t("rate_game_desc")}
+            icon={<StarIcon size={20} color={Theme.colors.primarySoft} />}
+          />
 
-        <SettingsButton
-          onPress={() => Linking.openURL("https://rixel.dev/#contact")}
-          title="Feedback"
-          icon={<QuestionIcon color={Theme.colors.darkGray} />}
-        />
+          <View style={styles.divider} />
 
-        <Divider />
+          <Row
+            onPress={() => Linking.openURL("https://rixel.dev")}
+            title={t("site")}
+            description={t("site_desc")}
+            icon={<WebIcon size={20} color={Theme.colors.primarySoft} />}
+          />
+        </View>
+
+        <Text style={styles.sectionLabel}>
+          {t("about", { defaultValue: "About" })}
+        </Text>
+
+        <View style={styles.group}>
+          <Row
+            onPress={() => Linking.openURL("https://rixel.dev/privacy")}
+            title={t("privacy_policy")}
+            icon={<PrivacyIcon size={20} color={Theme.colors.primarySoft} />}
+          />
+
+          <View style={styles.divider} />
+
+          <Row
+            onPress={() => Linking.openURL("https://rixel.dev/terms")}
+            title={t("terms_conditions")}
+            icon={<ListIcon size={20} color={Theme.colors.primarySoft} />}
+          />
+
+          <View style={styles.divider} />
+
+          <Row
+            onPress={() =>
+              Linking.openURL("https://github.com/rixel/stop-trivia-react")
+            }
+            title="Github"
+            icon={<GithubIcon size={20} color={Theme.colors.primarySoft} />}
+          />
+
+          <View style={styles.divider} />
+
+          <Row
+            onPress={() => Linking.openURL("https://rixel.dev/#contact")}
+            title="Feedback"
+            icon={<QuestionIcon size={20} color={Theme.colors.primarySoft} />}
+          />
+        </View>
 
         {auth && (
-          <SettingsButton
+          <Pressable
             onPress={handleSignOut}
-            title="Sign Out"
-            icon={<LogoutIcon color={Theme.colors.red} />}
-            color={Theme.colors.red}
-          />
+            style={({ pressed }) => [
+              styles.signOut,
+              { opacity: pressed ? 0.85 : 1 },
+            ]}
+          >
+            <LinearGradient
+              colors={Theme.gradients.danger}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.signOutGradient}
+            >
+              <LogoutIcon size={20} color={Theme.colors.text} />
+              <Text style={styles.signOutText}>Sign Out</Text>
+            </LinearGradient>
+          </Pressable>
         )}
 
-        <View
-          style={{
-            flexDirection: "column",
-            marginVertical: 8,
-            marginBottom: insets.bottom + 8,
-          }}
-        >
-          <Text
-            style={{
-              textAlign: "center",
-              width: "100%",
-              color: Theme.colors.darkGray,
-              fontFamily: Theme.fonts.onest,
-              fontSize: Theme.sizes.h5,
-            }}
-          >
-            Stop Trivia
-          </Text>
-
-          <Text
-            style={{
-              textAlign: "center",
-              width: "100%",
-              color: Theme.colors.darkGray,
-              fontFamily: Theme.fonts.onest,
-              fontSize: Theme.sizes.h6,
-            }}
-          >
-            {appVersion}
-          </Text>
+        <View style={[styles.footer, { marginBottom: insets.bottom + 16 }]}>
+          <View style={styles.footerLine} />
+          <Text style={styles.footerTitle}>Stop Trivia</Text>
+          <Text style={styles.footerVersion}>{appVersion}</Text>
         </View>
       </ScrollView>
 
-      <BottomSheetModal title={t("language")} ref={sheetRef}>
-        <View style={{ paddingHorizontal: 16, paddingVertical: 8 }}>
+      <BottomSheetModal
+        title={t("language")}
+        ref={sheetRef}
+        icon={<LanguageIcon size={20} color={Theme.colors.primarySoft} />}
+      >
+        <View style={styles.optionsWrap}>
           {languageCodes.map((option) => {
             const isSelected = languageSelected === option
             return (
               <Pressable
                 key={option}
                 style={({ pressed }) => [
-                  { opacity: pressed ? 0.6 : 1 },
+                  { opacity: pressed ? 0.7 : 1 },
                   styles.optionContainer,
                 ]}
                 onPress={() => toggleLanguage(option)}
@@ -534,15 +503,18 @@ export default function Settings() {
                     styles.outerCircle,
                     {
                       borderColor: isSelected
-                        ? Theme.colors.primary
+                        ? Theme.colors.primarySoft
                         : Theme.colors.gray,
+                      backgroundColor: isSelected
+                        ? Theme.colors.primary2
+                        : Theme.colors.transparent,
                     },
                   ]}
                 >
                   {isSelected && <View style={styles.innerDot} />}
                 </View>
 
-                <View>
+                <View style={styles.optionTextWrap}>
                   <Text style={styles.optionText}>
                     {option === "es" ? "Spanish" : "English"}
                   </Text>
@@ -555,21 +527,268 @@ export default function Settings() {
           })}
         </View>
       </BottomSheetModal>
-    </View>
+    </Screen>
+  )
+}
+
+const Row = ({
+  onPress,
+  title,
+  description,
+  icon,
+}: {
+  onPress: () => void
+  title: string
+  description?: string
+  icon: React.ReactNode
+}) => {
+  return (
+    <Pressable
+      style={({ pressed }) => [styles.row, { opacity: pressed ? 0.7 : 1 }]}
+      onPress={onPress}
+    >
+      <View style={styles.iconTile}>{icon}</View>
+
+      <View style={styles.rowText}>
+        <Text style={styles.rowTitle}>{title}</Text>
+        {description && (
+          <Text style={styles.rowDescription} numberOfLines={2}>
+            {description}
+          </Text>
+        )}
+      </View>
+
+      <View style={styles.valuePill}>
+        <ForwardIcon size={16} color={Theme.colors.darkGray} />
+      </View>
+    </Pressable>
   )
 }
 
 const styles = StyleSheet.create({
+  headerBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: Theme.colors.surface,
+    borderWidth: 1,
+    borderColor: Theme.colors.borderSoft,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  scrollContent: {
+    padding: Theme.spacing.l,
+    paddingTop: Theme.spacing.m,
+    gap: Theme.spacing.m,
+  },
+  profileCard: {
+    borderRadius: Theme.radii.xl,
+    padding: Theme.spacing.xl,
+    borderWidth: 1,
+    borderColor: Theme.colors.borderSoft,
+    ...Theme.shadows.glow,
+  },
+  profileHeader: {
+    alignItems: "center",
+    justifyContent: "center",
+    gap: Theme.spacing.s,
+  },
+  avatarWrap: {
+    position: "relative",
+    marginBottom: Theme.spacing.s,
+  },
+  avatarRing: {
+    width: 116,
+    height: 116,
+    borderRadius: 58,
+    padding: 4,
+    ...Theme.shadows.glow,
+  },
+  avatar: {
+    width: "100%",
+    height: "100%",
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: Theme.colors.surfaceHigh,
+    borderRadius: 54,
+    overflow: "hidden",
+  },
+  avatarImage: {
+    width: "100%",
+    height: "100%",
+    resizeMode: "cover",
+  },
+  editBadge: {
+    position: "absolute",
+    bottom: 2,
+    right: 2,
+    backgroundColor: Theme.colors.primary,
+    borderRadius: 20,
+    padding: 8,
+    borderWidth: 2,
+    borderColor: Theme.colors.surface,
+    ...Theme.shadows.sm,
+  },
+  name: {
+    color: Theme.colors.text,
+    fontFamily: Theme.fonts.onestBold,
+    fontSize: Theme.sizes.h0,
+    textAlign: "center",
+  },
+  email: {
+    color: Theme.colors.gray,
+    fontFamily: Theme.fonts.onest,
+    fontSize: Theme.sizes.h5,
+    textAlign: "center",
+  },
+  userIdRow: {
+    flexDirection: "row",
+    gap: Theme.spacing.s,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: Theme.colors.surface,
+    borderWidth: 1,
+    borderColor: Theme.colors.borderSoft,
+    borderRadius: Theme.radii.pill,
+    paddingHorizontal: Theme.spacing.l,
+    paddingVertical: Theme.spacing.s,
+    marginTop: Theme.spacing.xs,
+    maxWidth: "100%",
+  },
+  userId: {
+    color: Theme.colors.darkGray,
+    fontFamily: Theme.fonts.onest,
+    fontSize: Theme.sizes.h6,
+    maxWidth: 220,
+  },
+  sectionLabel: {
+    color: Theme.colors.darkGray,
+    fontFamily: Theme.fonts.onestBold,
+    fontSize: Theme.sizes.h6,
+    textTransform: "uppercase",
+    letterSpacing: 2,
+    marginTop: Theme.spacing.s,
+    marginBottom: -Theme.spacing.xs,
+    paddingHorizontal: Theme.spacing.s,
+  },
+  group: {
+    backgroundColor: Theme.colors.surface,
+    borderWidth: 1,
+    borderColor: Theme.colors.borderSoft,
+    borderRadius: Theme.radii.xl,
+    overflow: "hidden",
+    ...Theme.shadows.md,
+  },
+  row: {
+    flexDirection: "row",
+    gap: Theme.spacing.m,
+    alignItems: "center",
+    padding: Theme.spacing.m,
+  },
+  iconTile: {
+    width: 40,
+    height: 40,
+    borderRadius: Theme.radii.m,
+    backgroundColor: Theme.colors.surfaceHigh,
+    borderWidth: 1,
+    borderColor: Theme.colors.borderSoft,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  rowText: {
+    flex: 1,
+    gap: 2,
+  },
+  rowTitle: {
+    color: Theme.colors.lightGray,
+    fontFamily: Theme.fonts.onestBold,
+    fontSize: Theme.sizes.h4,
+  },
+  rowDescription: {
+    color: Theme.colors.gray,
+    fontFamily: Theme.fonts.onest,
+    fontSize: Theme.sizes.h6,
+    lineHeight: 15,
+  },
+  valuePill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Theme.spacing.s,
+    backgroundColor: Theme.colors.surfaceHigh,
+    borderWidth: 1,
+    borderColor: Theme.colors.borderSoft,
+    borderRadius: Theme.radii.pill,
+    paddingHorizontal: Theme.spacing.m,
+    paddingVertical: Theme.spacing.xs,
+  },
+  valuePillText: {
+    color: Theme.colors.primarySoft,
+    fontFamily: Theme.fonts.onestBold,
+    fontSize: Theme.sizes.h6,
+    letterSpacing: 1,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: Theme.colors.borderSoft,
+    marginLeft: 64,
+    opacity: 0.6,
+  },
+  signOut: {
+    borderRadius: Theme.radii.lg,
+    overflow: "hidden",
+    ...Theme.shadows.glowDanger,
+  },
+  signOutGradient: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: Theme.spacing.s,
+    paddingVertical: Theme.spacing.l,
+  },
+  signOutText: {
+    color: Theme.colors.text,
+    fontFamily: Theme.fonts.onestBold,
+    fontSize: Theme.sizes.h4,
+    letterSpacing: 0.5,
+  },
+  footer: {
+    alignItems: "center",
+    justifyContent: "center",
+    gap: Theme.spacing.xs,
+    marginTop: Theme.spacing.s,
+  },
+  footerLine: {
+    width: 40,
+    height: 1,
+    backgroundColor: Theme.colors.borderSoft,
+    marginBottom: Theme.spacing.s,
+  },
+  footerTitle: {
+    color: Theme.colors.gray,
+    fontFamily: Theme.fonts.onest,
+    fontSize: Theme.sizes.h5,
+  },
+  footerVersion: {
+    color: Theme.colors.darkGray,
+    fontFamily: Theme.fonts.onest,
+    fontSize: Theme.sizes.h6,
+  },
+  optionsWrap: {
+    paddingHorizontal: Theme.spacing.l,
+    paddingVertical: Theme.spacing.s,
+    gap: Theme.spacing.xs,
+  },
   optionContainer: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 12,
-    gap: 24,
+    paddingVertical: Theme.spacing.m,
+    gap: Theme.spacing.m,
+    borderRadius: Theme.radii.lg,
   },
   outerCircle: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
     borderWidth: 2,
     justifyContent: "center",
     alignItems: "center",
@@ -578,14 +797,20 @@ const styles = StyleSheet.create({
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: Theme.colors.primary,
+    backgroundColor: Theme.colors.primarySoft,
+  },
+  optionTextWrap: {
+    flex: 1,
+    gap: 2,
   },
   optionText: {
     fontSize: Theme.sizes.h4,
     color: Theme.colors.text,
+    fontFamily: Theme.fonts.onestBold,
   },
   optionSubText: {
     fontSize: Theme.sizes.h6,
     color: Theme.colors.gray,
+    fontFamily: Theme.fonts.onest,
   },
 })

@@ -1,5 +1,12 @@
 import { ReactElement } from "react"
-import { StyleSheet, Text, View, Pressable } from "react-native"
+import {
+  StyleSheet,
+  Text,
+  View,
+  Pressable,
+  ViewStyle,
+} from "react-native"
+import { ForwardIcon } from "@/components/ui/Icons"
 import { Theme } from "@/constants/Theme"
 
 interface SettingsButtonProps {
@@ -8,6 +15,7 @@ interface SettingsButtonProps {
   description?: string
   icon: ReactElement
   color?: string
+  style?: ViewStyle | ViewStyle[]
 }
 
 export const SettingsButton = ({
@@ -16,30 +24,33 @@ export const SettingsButton = ({
   description,
   icon,
   color,
+  style,
 }: SettingsButtonProps) => {
   return (
     <Pressable
       style={({ pressed }) => [
-        {
-          backgroundColor: pressed
-            ? Theme.colors.background2
-            : Theme.colors.transparent,
-          opacity: pressed ? 0.6 : 1,
-        },
+        { opacity: pressed ? 0.7 : 1, backgroundColor: pressed ? Theme.colors.surfaceHigh : Theme.colors.transparent },
         styles.pressable,
+        style,
       ]}
       onPress={onPress}
     >
-      <View>{icon}</View>
+      <View style={[styles.iconTile, { borderColor: Theme.colors.borderSoft }]}>
+        {icon}
+      </View>
 
-      <View style={{ flex: 1 }}>
-        <Text style={{ color: color ? color : Theme.colors.gray }}>
+      <View style={styles.textWrap}>
+        <Text style={[styles.title, color && { color }]} numberOfLines={1}>
           {title}
         </Text>
         {description && (
-          <Text style={{ color: Theme.colors.darkGray }}>{description}</Text>
+          <Text style={styles.description} numberOfLines={2}>
+            {description}
+          </Text>
         )}
       </View>
+
+      <ForwardIcon size={18} color={Theme.colors.darkGray} />
     </Pressable>
   )
 }
@@ -47,9 +58,34 @@ export const SettingsButton = ({
 const styles = StyleSheet.create({
   pressable: {
     flexDirection: "row",
-    gap: 12,
-    padding: 16,
+    gap: Theme.spacing.m,
+    paddingVertical: Theme.spacing.m,
+    paddingHorizontal: Theme.spacing.s,
     alignItems: "center",
-    paddingVertical: 16,
+    borderRadius: Theme.radii.lg,
+  },
+  iconTile: {
+    width: 44,
+    height: 44,
+    borderRadius: Theme.radii.m,
+    borderWidth: 1,
+    backgroundColor: Theme.colors.surface,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  textWrap: {
+    flex: 1,
+  },
+  title: {
+    color: Theme.colors.lightGray,
+    fontFamily: Theme.fonts.onestBold,
+    fontSize: Theme.sizes.h4,
+  },
+  description: {
+    color: Theme.colors.gray,
+    fontFamily: Theme.fonts.onest,
+    fontSize: Theme.sizes.h6,
+    marginTop: 1,
+    lineHeight: 15,
   },
 })

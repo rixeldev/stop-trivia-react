@@ -14,6 +14,7 @@ import Animated, {
   useSharedValue,
   withSpring,
 } from "react-native-reanimated"
+import { LinearGradient } from "expo-linear-gradient"
 import { useFocusEffect } from "expo-router"
 import { useStorage } from "@/hooks/useStorage"
 import { parseBoolean } from "@/libs/parseBoolean"
@@ -81,16 +82,20 @@ export function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
         <Animated.View
           style={[
             animatedStyle,
+            styles.indicatorWrap,
             {
-              position: "absolute",
-              backgroundColor: Theme.colors.primary2,
-              borderRadius: 30,
-              marginHorizontal: 12,
-              height: dimensions.height - 15,
-              width: buttonWidth - 25,
+              width: buttonWidth - 22,
+              height: dimensions.height - 16,
             },
           ]}
-        />
+        >
+          <LinearGradient
+            colors={Theme.gradients.cardHigh}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.indicator}
+          />
+        </Animated.View>
 
         {state.routes.map((route, index) => {
           const { options } = descriptors[route.key]
@@ -137,7 +142,7 @@ export function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
               isFocused={isFocused}
               routeName={route.name}
               label={label.toString()}
-              color={isFocused ? Theme.colors.primary : Theme.colors.darkGray}
+              color={isFocused ? Theme.colors.primarySoft : Theme.colors.gray}
             />
           )
         })}
@@ -180,14 +185,30 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignSelf: "center",
     alignItems: "center",
-    backgroundColor: Theme.colors.background2,
-    maxWidth: 200,
+    backgroundColor: Theme.colors.surface,
+    maxWidth: 220,
     paddingVertical: 8,
-    borderRadius: 30,
+    borderRadius: Theme.radii.pill,
+    borderWidth: 1,
+    borderColor: Theme.colors.borderSoft,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 10 },
-    shadowRadius: 10,
-    shadowOpacity: 0.2,
+    shadowRadius: 18,
+    shadowOpacity: 0.45,
+    elevation: 12,
     position: "absolute",
+  },
+  indicatorWrap: {
+    position: "absolute",
+    marginHorizontal: 10,
+    borderRadius: Theme.radii.pill,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: Theme.colors.borderSoft,
+    ...Theme.shadows.glow,
+  },
+  indicator: {
+    flex: 1,
+    borderRadius: Theme.radii.pill,
   },
 })

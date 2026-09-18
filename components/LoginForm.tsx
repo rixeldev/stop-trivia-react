@@ -6,7 +6,6 @@ import {
   TextInput,
   Pressable,
   StyleSheet,
-  KeyboardAvoidingView,
   ActivityIndicator,
   Animated,
   AccessibilityInfo,
@@ -14,7 +13,6 @@ import {
   ToastAndroid,
   Vibration,
   Linking,
-  Platform,
   ScrollView,
 } from "react-native"
 import { GOOGLE_AUTH_WEB_CLIENT_ID } from "@/constants/GoogleAuth"
@@ -41,6 +39,7 @@ import {
 import { auth } from "@/db/firebaseConfig"
 import { useTranslation } from "react-i18next"
 import { GoogleSignin } from "@react-native-google-signin/google-signin"
+import { Screen } from "@/components/ui/Screen"
 
 export const LoginForm = () => {
   const [email, setEmail] = useState("")
@@ -145,7 +144,7 @@ export const LoginForm = () => {
         ToastAndroid.showWithGravity(
           t("email_sent"),
           ToastAndroid.SHORT,
-          ToastAndroid.CENTER
+          ToastAndroid.CENTER,
         )
       })
       setError(null)
@@ -179,9 +178,9 @@ export const LoginForm = () => {
               ToastAndroid.showWithGravity(
                 t("verification_email_sent"),
                 ToastAndroid.SHORT,
-                ToastAndroid.CENTER
+                ToastAndroid.CENTER,
               )
-            }
+            },
           )
           console.log("Signed up!")
         }
@@ -227,53 +226,24 @@ export const LoginForm = () => {
   }
 
   return (
-    <KeyboardAvoidingView
-      behavior="padding"
-      style={styles.wrapper}
-      keyboardVerticalOffset={Platform.OS === "ios" ? 60 : 0}
-    >
-      {googleLoading ||
-        (loading && (
-          <View
-            style={{
-              flex: 1,
-              backgroundColor: Theme.colors.backdrop,
-              justifyContent: "center",
-              alignItems: "center",
-              position: "absolute",
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              zIndex: 50,
-            }}
-          >
-            <ActivityIndicator
-              size="large"
-              color={Theme.colors.accent}
-              style={{ width: 38, height: 38, alignSelf: "center" }}
-            />
-          </View>
-        ))}
+    <Screen padding={0}>
+      {(googleLoading || loading) && (
+        <View style={styles.loadingOverlay}>
+          <ActivityIndicator size="large" color={Theme.colors.primarySoft} />
+        </View>
+      )}
 
       <Pressable
         style={{ flex: 1, width: "100%", alignItems: "center" }}
         onPress={() => Keyboard.dismiss()}
       >
         <ScrollView
-          contentContainerStyle={{ flex: 1 }}
+          contentContainerStyle={{ flexGrow: 1 }}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.container}>
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                justifyContent: "center",
-                marginBottom: 28,
-              }}
-            >
+            <View style={styles.brandRow}>
               <LottieView
                 source={ic}
                 autoPlay
@@ -290,8 +260,8 @@ export const LoginForm = () => {
 
             {!signInForm && (
               <View style={styles.field}>
-                <View style={styles.iconLeft}>
-                  <UserIcon color={Theme.colors.gray} />
+                <View style={styles.iconTile}>
+                  <UserIcon size={18} color={Theme.colors.primarySoft} />
                 </View>
 
                 <TextInput
@@ -306,14 +276,14 @@ export const LoginForm = () => {
                   returnKeyType="next"
                   accessibilityLabel="Username"
                   importantForAutofill="yes"
-                  cursorColor={Theme.colors.accent}
+                  cursorColor={Theme.colors.primarySoft}
                 />
               </View>
             )}
 
             <View style={styles.field}>
-              <View style={styles.iconLeft}>
-                <MailIcon color={Theme.colors.gray} />
+              <View style={styles.iconTile}>
+                <MailIcon size={18} color={Theme.colors.primarySoft} />
               </View>
               <TextInput
                 style={styles.input}
@@ -327,13 +297,13 @@ export const LoginForm = () => {
                 returnKeyType="next"
                 accessibilityLabel="Email"
                 importantForAutofill="yes"
-                cursorColor={Theme.colors.accent}
+                cursorColor={Theme.colors.primarySoft}
               />
             </View>
 
             <View style={styles.field}>
-              <View style={styles.iconLeft}>
-                <LockIcon color={Theme.colors.gray} />
+              <View style={styles.iconTile}>
+                <LockIcon size={18} color={Theme.colors.primarySoft} />
               </View>
 
               <TextInput
@@ -347,7 +317,7 @@ export const LoginForm = () => {
                 returnKeyType="done"
                 onSubmitEditing={handleSignin}
                 accessibilityLabel="Password"
-                cursorColor={Theme.colors.accent}
+                cursorColor={Theme.colors.primarySoft}
               />
 
               <Pressable
@@ -359,17 +329,17 @@ export const LoginForm = () => {
                 }
               >
                 {showPassword ? (
-                  <EyeOffIcon color={Theme.colors.gray} />
+                  <EyeOffIcon size={18} color={Theme.colors.gray} />
                 ) : (
-                  <EyeIcon color={Theme.colors.gray} />
+                  <EyeIcon size={18} color={Theme.colors.gray} />
                 )}
               </Pressable>
             </View>
 
             {!signInForm && (
               <View style={styles.field}>
-                <View style={styles.iconLeft}>
-                  <LockIcon color={Theme.colors.gray} />
+                <View style={styles.iconTile}>
+                  <LockIcon size={18} color={Theme.colors.primarySoft} />
                 </View>
 
                 <TextInput
@@ -383,7 +353,7 @@ export const LoginForm = () => {
                   returnKeyType="done"
                   onSubmitEditing={handleSignin}
                   accessibilityLabel="Password"
-                  cursorColor={Theme.colors.accent}
+                  cursorColor={Theme.colors.primarySoft}
                 />
 
                 <Pressable
@@ -395,9 +365,9 @@ export const LoginForm = () => {
                   }
                 >
                   {showPassword ? (
-                    <EyeOffIcon color={Theme.colors.gray} />
+                    <EyeOffIcon size={18} color={Theme.colors.gray} />
                   ) : (
-                    <EyeIcon color={Theme.colors.gray} />
+                    <EyeIcon size={18} color={Theme.colors.gray} />
                   )}
                 </Pressable>
               </View>
@@ -407,7 +377,7 @@ export const LoginForm = () => {
               <Text style={styles.error}>{error}</Text>
 
               {signInForm && (
-                <Pressable onPress={handleForgot}>
+                <Pressable onPress={handleForgot} hitSlop={8}>
                   <Text style={styles.forgotText}>{t("forgot")}</Text>
                 </Pressable>
               )}
@@ -422,7 +392,7 @@ export const LoginForm = () => {
                 onPress={handleSignin}
                 style={({ pressed }) => [
                   styles.submit,
-                  pressed && { opacity: 0.9 },
+                  pressed && { opacity: 0.92 },
                   loading && { opacity: 0.8 },
                 ]}
                 accessibilityRole="button"
@@ -446,6 +416,7 @@ export const LoginForm = () => {
               <Pressable
                 style={({ pressed }) => [{ opacity: pressed ? 0.6 : 1 }]}
                 onPress={handleChangeForm}
+                hitSlop={8}
               >
                 <Text style={styles.signupText}>
                   {signInForm ? t("sign_up") : t("sign_in")}
@@ -454,15 +425,11 @@ export const LoginForm = () => {
             </View>
 
             <View>
-              <Text
-                style={{
-                  textAlign: "center",
-                  color: Theme.colors.gray,
-                  marginVertical: 24,
-                }}
-              >
-                {t("or_sign_in_with")}
-              </Text>
+              <View style={styles.orRow}>
+                <View style={styles.line} />
+                <Text style={styles.orText}>{t("or_sign_in_with")}</Text>
+                <View style={styles.line} />
+              </View>
 
               <Pressable
                 onPress={handleGoogleSignIn}
@@ -479,27 +446,21 @@ export const LoginForm = () => {
                 <Text style={[styles.googleText, { color: "#0F9D58" }]}>l</Text>
                 <Text style={[styles.googleText, { color: "#DB4437" }]}>e</Text>
               </Pressable>
+
+              {!signInForm && <View style={{ height: 12 }} />}
             </View>
 
-            <View
-              style={{
-                flexDirection: "row",
-                justifyContent: "center",
-                gap: 4,
-                alignSelf: "stretch",
-              }}
+            <Pressable
+              onPress={() => Linking.openURL("https://rixel.dev/privacy")}
+              hitSlop={8}
+              style={({ pressed }) => [{ opacity: pressed ? 0.6 : 1 }]}
             >
-              <Text
-                onPress={() => Linking.openURL("https://rixel.dev/privacy")}
-                style={styles.footerPolicy}
-              >
-                {t("privacy_policy")}
-              </Text>
-            </View>
+              <Text style={styles.footerPolicy}>{t("privacy_policy")}</Text>
+            </Pressable>
           </View>
         </ScrollView>
       </Pressable>
-    </KeyboardAvoidingView>
+    </Screen>
   )
 }
 
@@ -511,136 +472,166 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     backgroundColor: Theme.colors.background,
   },
-  container: {
-    padding: 12,
-    flex: 1,
-    width: "auto",
-    minWidth: 300,
-    maxWidth: 400,
+  loadingOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: Theme.colors.backdrop,
+    zIndex: 50,
+  },
+  container: {
+    padding: Theme.spacing.l,
+    flex: 1,
+    width: "100%",
+    minWidth: 300,
+    alignSelf: "center",
+    justifyContent: "center",
+  },
+  brandRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: Theme.spacing.xxl,
+    gap: Theme.spacing.s,
+  },
+  brandChip: {
+    backgroundColor: Theme.colors.surface,
+    borderWidth: 1,
+    borderColor: Theme.colors.borderSoft,
+    borderRadius: Theme.radii.pill,
+    paddingVertical: Theme.spacing.s,
+    paddingHorizontal: Theme.spacing.l,
+    ...Theme.shadows.md,
   },
   title: {
     fontFamily: Theme.fonts.onestBold,
-    fontSize: 42,
+    fontSize: Theme.sizes.display,
     color: Theme.colors.text,
     marginStart: -5,
   },
   field: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: Theme.colors.background2,
-    borderRadius: 14,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    marginBottom: 12,
+    backgroundColor: Theme.colors.surface,
+    borderWidth: 1,
+    borderColor: Theme.colors.borderSoft,
+    borderRadius: Theme.radii.lg,
+    paddingHorizontal: Theme.spacing.m,
+    paddingVertical: 4,
+    marginBottom: Theme.spacing.m,
+    ...Theme.shadows.sm,
   },
-  iconLeft: {
-    marginRight: 8,
+  iconTile: {
+    width: 32,
+    height: 32,
+    borderRadius: Theme.radii.s,
+    backgroundColor: Theme.colors.surfaceHigh,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: Theme.spacing.s,
   },
   iconRight: {
-    marginLeft: 8,
-    padding: 6,
+    marginLeft: Theme.spacing.s,
+    padding: Theme.spacing.s,
   },
   input: {
     flex: 1,
     color: Theme.colors.text,
     fontSize: Theme.sizes.h4,
     fontFamily: Theme.fonts.onest,
+    paddingVertical: Theme.spacing.m,
   },
   row: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 12,
+    marginBottom: Theme.spacing.m,
+    minHeight: 18,
   },
   forgotText: {
-    color: Theme.colors.primary,
+    color: Theme.colors.primarySoft,
     fontFamily: Theme.fonts.onest,
+    fontSize: Theme.sizes.h5,
   },
   error: {
     color: Theme.colors.red,
-    marginBottom: 8,
     fontFamily: Theme.fonts.onest,
+    fontSize: Theme.sizes.h5,
   },
   submit: {
     backgroundColor: Theme.colors.primary,
     paddingVertical: 14,
-    borderRadius: 14,
+    borderRadius: Theme.radii.pill,
     alignItems: "center",
-    marginTop: 6,
-    marginBottom: 12,
+    marginTop: Theme.spacing.s,
+    marginBottom: Theme.spacing.m,
     flexDirection: "row",
     justifyContent: "center",
-    gap: 8,
+    gap: Theme.spacing.s,
+    ...Theme.shadows.glow,
   },
   submitText: {
     color: Theme.colors.text,
     fontSize: Theme.sizes.h4,
     fontFamily: Theme.fonts.onestBold,
+    letterSpacing: 0.4,
   },
   orRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
-    marginVertical: 10,
+    gap: Theme.spacing.s,
+    marginVertical: Theme.spacing.l,
   },
   line: {
     flex: 1,
     height: 1,
-    backgroundColor: Theme.colors.background ?? Theme.colors.darkGray,
+    backgroundColor: Theme.colors.borderSoft,
   },
   orText: {
-    marginHorizontal: 8,
-    color: Theme.colors.darkGray,
+    color: Theme.colors.gray,
     fontFamily: Theme.fonts.onest,
-  },
-  socialRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    gap: 8,
-    marginBottom: 20,
-  },
-  socialBtn: {
-    flex: 1,
-    paddingVertical: 10,
-    borderRadius: 12,
-    backgroundColor: Theme.colors.background2,
-    alignItems: "center",
-    marginHorizontal: 4,
-  },
-  socialText: {
-    color: Theme.colors.text,
-    fontFamily: Theme.fonts.onest,
+    fontSize: Theme.sizes.h6,
+    textTransform: "uppercase",
+    letterSpacing: 1,
   },
   footer: {
     flexDirection: "row",
     justifyContent: "center",
-    marginTop: 8,
-    gap: 4,
+    marginTop: Theme.spacing.s,
+    gap: Theme.spacing.xs,
+    marginBottom: Theme.spacing.xl,
   },
   footerText: {
     color: Theme.colors.gray,
     fontFamily: Theme.fonts.onest,
+    fontSize: Theme.sizes.h5,
   },
   footerPolicy: {
     color: Theme.colors.darkGray,
     fontFamily: Theme.fonts.onest,
-    marginVertical: 8,
+    fontSize: Theme.sizes.h6,
+    textAlign: "center",
+    marginVertical: Theme.spacing.m,
+    textDecorationLine: "underline",
   },
   signupText: {
-    color: Theme.colors.primary,
+    color: Theme.colors.primarySoft,
     fontFamily: Theme.fonts.onestBold,
+    fontSize: Theme.sizes.h5,
   },
   googleBtn: {
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 1,
-    borderColor: Theme.colors.primary2,
-    backgroundColor: Theme.colors.modal,
-    paddingVertical: 12,
-    borderRadius: 14,
-    marginBottom: 12,
+    borderColor: Theme.colors.borderSoft,
+    backgroundColor: Theme.colors.surface,
+    paddingVertical: Theme.spacing.m,
+    borderRadius: Theme.radii.pill,
   },
   googleText: {
     fontSize: Theme.sizes.h2,

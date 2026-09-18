@@ -46,6 +46,7 @@ import { BottomSheetModal } from "@/components/BottomSheetModal"
 import Clipboard from "@react-native-clipboard/clipboard"
 import { Screen } from "@/components/ui/Screen"
 import { PlayingButton } from "@/components/PlayingButton"
+import { LinearGradient } from "expo-linear-gradient"
 import {
   AdEventType,
   InterstitialAd,
@@ -556,37 +557,12 @@ export default function TTT() {
   return (
     <Screen>
       {!connection && mode !== "offline" && (
-        <View
-          style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            justifyContent: "center",
-            alignItems: "center",
-            backgroundColor: Theme.colors.backdrop,
-            zIndex: 10,
-            gap: 16,
-          }}
-        >
-          <OfflineIcon size={64} color={Theme.colors.accent} />
-
-          <Text
-            style={{
-              color: Theme.colors.accent,
-              fontFamily: Theme.fonts.onestBold,
-              fontSize: Theme.sizes.h0,
-            }}
-          >
-            {t("you_are_offline")}
-          </Text>
-
-          <ActivityIndicator
-            size="large"
-            color={Theme.colors.accent}
-            style={{ width: 38, height: 38, alignSelf: "center" }}
-          />
+        <View style={styles.offlineOverlay}>
+          <View style={styles.offlineCard}>
+            <OfflineIcon size={56} color={Theme.colors.primarySoft} />
+            <Text style={styles.offlineTitle}>{t("you_are_offline")}</Text>
+            <ActivityIndicator size="large" color={Theme.colors.primarySoft} />
+          </View>
         </View>
       )}
 
@@ -600,7 +576,15 @@ export default function TTT() {
           },
           headerTitleAlign: "center",
           headerLeft: () => (
-            <BackIcon size={34} onPress={() => handleBackPress(gameData)} />
+            <Pressable
+              onPress={() => handleBackPress(gameData)}
+              style={({ pressed }) => [
+                styles.headerBtn,
+                { opacity: pressed ? 0.7 : 1 },
+              ]}
+            >
+              <BackIcon size={22} color={Theme.colors.primarySoft} />
+            </Pressable>
           ),
           headerRight:
             mode !== "offline" && mode !== "computer"
@@ -628,52 +612,31 @@ export default function TTT() {
               setIdModalVisible(false)
             }}
           >
-            <View style={styles.centeredView}>
+            <LinearGradient
+              colors={Theme.gradients.overlay}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 0, y: 1 }}
+              style={styles.centeredView}
+            >
               <TouchableWithoutFeedback>
                 <View style={styles.modalView}>
-                  <Text
-                    style={{
-                      color: Theme.colors.accent,
-                      fontFamily: Theme.fonts.onestBold,
-                      fontSize: Theme.sizes.h3,
-                      alignSelf: "center",
-                      marginBottom: 16,
-                    }}
-                  >
-                    {t("invite_friends")}
-                  </Text>
+                  <Text style={styles.modalTitle}>{t("invite_friends")}</Text>
 
-                  <View style={{ gap: 8 }}>
-                    <View
-                      style={{
-                        flexDirection: "row",
-                        gap: 8,
-                        alignItems: "center",
-                        justifyContent: "center",
-                      }}
-                    >
-                      <Text
-                        style={{
-                          color: Theme.colors.accent,
-                          fontFamily: Theme.fonts.onest,
-                          fontSize: Theme.sizes.h4,
-                        }}
-                      >
-                        {gameData?.gameId.toUpperCase()}
-                      </Text>
-
-                      <Pressable onPress={copyRoomCode}>
-                        {copied ? (
-                          <CheckIcon color={Theme.colors.accent} size={16} />
-                        ) : (
-                          <CopyIcon color={Theme.colors.accent} size={16} />
-                        )}
-                      </Pressable>
-                    </View>
+                  <View style={styles.roomCodeWrap}>
+                    <Text style={styles.roomCode}>
+                      {gameData?.gameId.toUpperCase()}
+                    </Text>
+                    <Pressable onPress={copyRoomCode} hitSlop={10}>
+                      {copied ? (
+                        <CheckIcon color={Theme.colors.green} size={24} />
+                      ) : (
+                        <CopyIcon color={Theme.colors.primarySoft} size={24} />
+                      )}
+                    </Pressable>
                   </View>
                 </View>
               </TouchableWithoutFeedback>
-            </View>
+            </LinearGradient>
           </TouchableWithoutFeedback>
         </Modal>
       )}
@@ -690,167 +653,142 @@ export default function TTT() {
         onAccept={handleOnExit}
       />
 
-      <View
-        style={{
-          flexDirection: "column",
-          justifyContent: "center",
-          alignItems: "center",
-          gap: 12,
-          paddingVertical: 24,
-        }}
-      >
-        <Text
-          style={{
-            color: Theme.colors.gray,
-            fontFamily: Theme.fonts.onest,
-            fontSize: Theme.sizes.h3,
-          }}
-        >
-          {t("turn")}: {isPlayerTurn ? POS.X : POS.O}
-        </Text>
+      <View style={styles.turnRow}>
+        <View style={styles.turnPill}>
+          <View
+            style={[
+              styles.turnDot,
+              {
+                backgroundColor: isPlayerTurn
+                  ? Theme.colors.primarySoft
+                  : Theme.colors.secondary,
+              },
+            ]}
+          />
+          <Text style={styles.turnText}>
+            {t("turn")}:{" "}
+            <Text
+              style={{
+                fontFamily: Theme.fonts.onestBold,
+                color: isPlayerTurn
+                  ? Theme.colors.primarySoft
+                  : Theme.colors.secondary,
+              }}
+            >
+              {isPlayerTurn ? POS.X : POS.O}
+            </Text>
+          </Text>
+        </View>
       </View>
 
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-        <View
-          style={{
-            flexDirection: "row",
-            flexWrap: "wrap",
-            justifyContent: "center",
-            alignItems: "center",
-            gap: 10,
-            width: "100%",
-          }}
-        >
+      <View style={styles.boardRow}>
+        <View style={styles.boardPanel}>
           {board.map((data, index) => (
             <Animated.View
               key={index}
-              style={{
-                transform: [{ scale: btnScales[index] }],
-                width: "30%",
-                aspectRatio: 1,
-                borderRadius: 18,
-                overflow: "hidden",
-                backgroundColor: data
-                  ? Theme.colors.background2
-                  : Theme.colors.modal,
-                justifyContent: "center",
-                alignItems: "center",
-              }}
+              style={[
+                styles.square,
+                {
+                  width: "30%",
+                  transform: [{ scale: btnScales[index] }],
+                  backgroundColor: data
+                    ? Theme.colors.surfaceHigh
+                    : Theme.colors.surface,
+                },
+              ]}
             >
               <Pressable
                 onPressIn={() => handlePressIn(index)}
                 onPressOut={() => handlePressOut(index)}
                 onPress={() => handleSquarePress(index)}
-                style={{
-                  width: "100%",
-                  height: "100%",
-                  justifyContent: "center",
-                  alignItems: "center",
-                }}
+                style={styles.squarePressable}
               >
-                <Text
-                  style={{
-                    color:
-                      board[index] === POS.X
-                        ? Theme.colors.accent
-                        : Theme.colors.text,
-                    fontFamily: Theme.fonts.onestBold,
-                    fontSize: 42,
-                  }}
+                <LinearGradient
+                  colors={
+                    data
+                      ? Theme.gradients.cardHigh
+                      : [Theme.colors.surface, Theme.colors.surfaceHigh] as const
+                  }
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.squareGradient}
                 >
-                  {data}
-                </Text>
+                  <Text
+                    style={[
+                      styles.squareText,
+                      {
+                        color:
+                          data === POS.X
+                            ? Theme.colors.primarySoft
+                            : Theme.colors.secondary,
+                      },
+                    ]}
+                  >
+                    {data}
+                  </Text>
+                </LinearGradient>
               </Pressable>
             </Animated.View>
           ))}
         </View>
       </View>
 
-      <View
-        style={{
-          flexDirection: "column",
-          justifyContent: "center",
-          alignItems: "center",
-          gap: 12,
-          paddingVertical: 24,
-        }}
-      >
-        <Text
-          style={{
-            color: Theme.colors.text,
-            fontFamily: Theme.fonts.onestBold,
-            fontSize: 46,
-          }}
-        >
-          {winnerText}
-        </Text>
+      <View style={styles.winnerRow}>
+        {winnerText && !winner ? (
+          <Text style={styles.winnerText}>{winnerText}</Text>
+        ) : (
+          <Text style={[styles.winnerText, styles.winnerTextGlow]}>
+            {winnerText}
+          </Text>
+        )}
       </View>
 
-      <View style={{ flexDirection: "column", gap: 12, paddingVertical: 24 }}>
+      <View style={styles.bottomRow}>
         {mode !== "offline" && (
-          <View
-            style={{
-              flexDirection: "row",
-              gap: 12,
-              justifyContent: "center",
-              alignItems: "center",
-            }}
-          >
-            <Text style={styles.texts}>
-              {t("round")}: {gameData?.round === 0 ? 1 : (gameData?.round ?? 0)}
-            </Text>
-            <Text style={styles.texts}>
-              {t("you")}:{" "}
-              {mode === "offline"
-                ? `${isPlayerTurn ? POS.X : POS.O}`
-                : myId.current}
-            </Text>
+          <View style={styles.statsRow}>
+            <View style={styles.statChip}>
+              <Text style={styles.statValue}>
+                {gameData?.round === 0 ? 1 : (gameData?.round ?? 0)}
+              </Text>
+              <Text style={styles.statLabel}>{t("round")}</Text>
+            </View>
+            <View style={styles.statChip}>
+              <Text style={styles.statValue}>
+                {mode === "offline"
+                  ? `${isPlayerTurn ? POS.X : POS.O}`
+                  : myId.current}
+              </Text>
+              <Text style={styles.statLabel}>{t("you")}</Text>
+            </View>
           </View>
         )}
 
-        <View
-          style={{
-            flexDirection: "row",
-            gap: 12,
-            justifyContent: "center",
-            alignItems: "center",
-          }}
-        >
+        <View style={styles.restartRow}>
           {winner && mode === "online" && (
             <PlayingButton
               flag="restart"
               onPress={() => handleReset()}
-              icon={<RestartIcon size={30} />}
+              icon={<RestartIcon size={26} color={Theme.colors.secondary} />}
             />
           )}
         </View>
       </View>
 
-      <BottomSheetModal title={t("players")} ref={sheetRef}>
-        <View style={{ marginBottom: 8, gap: 8 }}>
-          <View
-            style={{
-              flexDirection: "row",
-              gap: 8,
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <Text
-              style={{
-                color: Theme.colors.accent,
-                fontFamily: Theme.fonts.onest,
-                fontSize: Theme.sizes.h4,
-              }}
-            >
+      <BottomSheetModal
+        title={t("players")}
+        ref={sheetRef}
+        icon={<UsersIcon size={20} color={Theme.colors.primarySoft} />}
+      >
+        <View style={{ marginBottom: 8, gap: Theme.spacing.s }}>
+          <View style={styles.roomRow}>
+            <Text style={styles.roomRowCode}>
               {gameData?.gameId.toUpperCase()}
             </Text>
-
-            <Pressable onPress={copyRoomCode}>
+            <Pressable onPress={copyRoomCode} hitSlop={10}>
               {copied ? (
-                <CheckIcon color={Theme.colors.accent} size={16} />
+                <CheckIcon color={Theme.colors.green} size={18} />
               ) : (
-                <CopyIcon color={Theme.colors.accent} size={16} />
+                <CopyIcon color={Theme.colors.primarySoft} size={18} />
               )}
             </Pressable>
           </View>
@@ -858,66 +796,51 @@ export default function TTT() {
           {gameData &&
             gameData.players
               .sort((a, b) => b.wins - a.wins)
-              .map((player) => (
+              .map((player, index) => (
                 <Pressable
                   key={player.id}
                   style={({ pressed }) => [
                     {
-                      opacity: pressed ? 0.6 : 1,
-                      backgroundColor: Theme.colors.background2,
-                      padding: 16,
-                      borderRadius: 14,
+                      opacity: pressed ? 0.75 : 1,
+                      backgroundColor: Theme.colors.surfaceHigh,
+                      padding: Theme.spacing.m,
+                      borderRadius: Theme.radii.lg,
                       justifyContent: "space-between",
                       alignItems: "center",
                       flexDirection: "row",
-                      gap: 8,
+                      gap: Theme.spacing.m,
+                      borderWidth: 1,
+                      borderColor: Theme.colors.borderSoft,
                     },
                   ]}
                 >
-                  <View
-                    style={{
-                      width: 38,
-                      height: 38,
-                      justifyContent: "center",
-                      alignItems: "center",
-                      backgroundColor: Theme.colors.primary2,
-                      borderRadius: "100%",
-                      overflow: "hidden",
-                    }}
-                  >
+                  <View style={styles.avatar}>
                     {!player.photoURL || player.photoURL === "" ? (
-                      <UserIcon size={32} color={Theme.colors.accent} />
+                      <UserIcon size={24} color={Theme.colors.primarySoft} />
                     ) : (
-                      <Image
-                        style={{
-                          objectFit: "cover",
-                          width: "100%",
-                          height: "100%",
-                        }}
-                        source={{ uri: player.photoURL }}
-                      />
+                      <Image style={styles.avatarImage} source={{ uri: player.photoURL }} />
                     )}
                   </View>
-                  <Text
-                    style={{
-                      flex: 1,
-                      color: Theme.colors.gray,
-                      fontFamily: Theme.fonts.onestBold,
-                      fontSize: Theme.sizes.h3,
-                      textAlign: "left",
-                    }}
-                  >
+
+                  <Text style={styles.playerName} numberOfLines={1}>
                     {player.name}
                   </Text>
-                  <Text
-                    style={{
-                      color: Theme.colors.gray,
-                      fontFamily: Theme.fonts.onest,
-                      fontSize: Theme.sizes.h3,
-                    }}
+
+                  <View
+                    style={[
+                      styles.playerWins,
+                      index === 0 && styles.leaderPoints,
+                    ]}
                   >
-                    {player.wins}
-                  </Text>
+                    <Text
+                      style={[
+                        styles.playerWinsText,
+                        index === 0 && styles.leaderPointsText,
+                      ]}
+                    >
+                      {player.wins}
+                    </Text>
+                  </View>
                 </Pressable>
               ))}
         </View>
@@ -936,21 +859,29 @@ const CurrentPlayers = ({
   return (
     <Pressable
       onPress={onPress}
+      hitSlop={8}
       style={({ pressed }) => [
         {
-          opacity: pressed ? 0.6 : 1,
+          opacity: pressed ? 0.7 : 1,
           flexDirection: "row",
-          gap: 8,
+          gap: Theme.spacing.s,
           alignItems: "center",
           justifyContent: "center",
+          backgroundColor: Theme.colors.surface,
+          borderWidth: 1,
+          borderColor: Theme.colors.borderSoft,
+          paddingHorizontal: Theme.spacing.m,
+          paddingVertical: 6,
+          borderRadius: Theme.radii.pill,
         },
       ]}
     >
-      <UsersIcon color={Theme.colors.accent} />
+      <UsersIcon size={16} color={Theme.colors.primarySoft} />
       <Text
         style={{
-          color: Theme.colors.accent,
+          color: Theme.colors.primarySoft,
           fontFamily: Theme.fonts.onestBold,
+          fontSize: Theme.sizes.h5,
         }}
       >
         {players}/2
@@ -960,29 +891,271 @@ const CurrentPlayers = ({
 }
 
 const styles = StyleSheet.create({
-  texts: {
-    color: Theme.colors.lightGray,
-    alignSelf: "flex-start",
+  offlineOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: Theme.colors.backdrop,
+    zIndex: 10,
+    padding: Theme.spacing.xl,
+  },
+  offlineCard: {
+    alignItems: "center",
+    gap: Theme.spacing.l,
+    backgroundColor: Theme.colors.surface,
+    borderWidth: 1,
+    borderColor: Theme.colors.borderSoft,
+    borderRadius: Theme.radii.xl,
+    padding: Theme.spacing.xxxl,
+    width: "100%",
+    maxWidth: 420,
+    ...Theme.shadows.lg,
+  },
+  offlineTitle: {
+    color: Theme.colors.text,
     fontFamily: Theme.fonts.onestBold,
+    fontSize: Theme.sizes.h0,
+  },
+  headerBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: Theme.colors.surface,
+    borderWidth: 1,
+    borderColor: Theme.colors.borderSoft,
+    alignItems: "center",
+    justifyContent: "center",
   },
   centeredView: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "rgba(0,0,0,0.8)",
+    padding: 20,
   },
   modalView: {
-    margin: 20,
-    backgroundColor: Theme.colors.modal,
+    width: "100%",
+    maxWidth: 400,
+    backgroundColor: Theme.colors.surface,
+    borderRadius: Theme.radii.xl,
+    padding: Theme.spacing.xl,
+    borderWidth: 1,
+    borderColor: Theme.colors.borderSoft,
+    alignItems: "center",
+    gap: Theme.spacing.l,
+    ...Theme.shadows.lg,
+  },
+  modalTitle: {
+    color: Theme.colors.text,
+    fontFamily: Theme.fonts.onestBold,
+    fontSize: Theme.sizes.h3,
+  },
+  roomCodeWrap: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: Theme.spacing.m,
+    backgroundColor: Theme.colors.surfaceHigh,
+    borderWidth: 1,
+    borderColor: Theme.colors.borderSoft,
+    borderRadius: Theme.radii.lg,
+    paddingVertical: Theme.spacing.m,
+    paddingHorizontal: Theme.spacing.xl,
+    minWidth: 180,
+  },
+  roomCode: {
+    color: Theme.colors.primarySoft,
+    fontFamily: Theme.fonts.onestBold,
+    fontSize: Theme.sizes.h3,
+    letterSpacing: 4,
+  },
+  turnRow: {
+    justifyContent: "center",
+    alignItems: "center",
+    paddingVertical: Theme.spacing.l,
+  },
+  turnPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Theme.spacing.s,
+    backgroundColor: Theme.colors.surface,
+    borderWidth: 1,
+    borderColor: Theme.colors.borderSoft,
+    borderRadius: Theme.radii.pill,
+    paddingVertical: Theme.spacing.s,
+    paddingHorizontal: Theme.spacing.xl,
+    ...Theme.shadows.sm,
+  },
+  turnDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+  },
+  turnText: {
+    color: Theme.colors.gray,
+    fontFamily: Theme.fonts.onest,
+    fontSize: Theme.sizes.h4,
+  },
+  boardRow: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: Theme.spacing.l,
+  },
+  boardPanel: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 10,
+    width: "100%",
+    maxWidth: 420,
+    padding: Theme.spacing.m,
+    borderRadius: Theme.radii.xl,
+    borderWidth: 1,
+    borderColor: Theme.colors.borderSoft,
+    backgroundColor: Theme.colors.surface,
+    ...Theme.shadows.md,
+  },
+  square: {
+    aspectRatio: 1,
+    borderRadius: Theme.radii.lg,
+    overflow: "hidden",
+  },
+  squarePressable: {
+    width: "100%",
+    height: "100%",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  squareGradient: {
+    width: "100%",
+    height: "100%",
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: Theme.colors.borderSoft,
+    borderRadius: Theme.radii.lg,
+  },
+  squareText: {
+    fontFamily: Theme.fonts.onestBold,
+    fontSize: 48,
+  },
+  winnerRow: {
+    flexDirection: "column",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: Theme.spacing.m,
+    paddingVertical: Theme.spacing.m,
+  },
+  winnerText: {
+    color: Theme.colors.text,
+    fontFamily: Theme.fonts.onestBold,
+    fontSize: 38,
+  },
+  winnerTextGlow: {
+    textShadowColor: Theme.colors.primary,
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 18,
+  },
+  bottomRow: {
+    flexDirection: "column",
+    gap: Theme.spacing.m,
+    paddingVertical: Theme.spacing.l,
+  },
+  statsRow: {
+    flexDirection: "row",
+    gap: Theme.spacing.m,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  statChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Theme.spacing.s,
+    backgroundColor: Theme.colors.surface,
+    borderWidth: 1,
+    borderColor: Theme.colors.borderSoft,
+    borderRadius: Theme.radii.pill,
+    paddingVertical: Theme.spacing.s,
+    paddingHorizontal: Theme.spacing.l,
+    minWidth: 72,
+    justifyContent: "center",
+  },
+  statValue: {
+    color: Theme.colors.primarySoft,
+    fontFamily: Theme.fonts.onestBold,
+    fontSize: Theme.sizes.h4,
+  },
+  statLabel: {
+    color: Theme.colors.gray,
+    fontFamily: Theme.fonts.onest,
+    fontSize: Theme.sizes.h6,
+    textTransform: "uppercase",
+    letterSpacing: 0.8,
+  },
+  restartRow: {
+    flexDirection: "row",
+    gap: Theme.spacing.m,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  roomRow: {
+    flexDirection: "row",
+    gap: Theme.spacing.s,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  roomRowCode: {
+    color: Theme.colors.primarySoft,
+    fontFamily: Theme.fonts.onestBold,
+    fontSize: Theme.sizes.h4,
+    letterSpacing: 3,
+  },
+  avatar: {
+    width: 40,
+    height: 40,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: Theme.colors.surface,
+    borderWidth: 1,
+    borderColor: Theme.colors.borderSoft,
     borderRadius: 20,
-    padding: 20,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
+    overflow: "hidden",
+  },
+  avatarImage: {
+    width: "100%",
+    height: "100%",
+    resizeMode: "cover",
+  },
+  playerName: {
+    flex: 1,
+    color: Theme.colors.lightGray,
+    fontFamily: Theme.fonts.onestBold,
+    fontSize: Theme.sizes.h4,
+    textAlign: "left",
+  },
+  playerWins: {
+    backgroundColor: Theme.colors.surface,
+    borderWidth: 1,
+    borderColor: Theme.colors.borderSoft,
+    borderRadius: Theme.radii.pill,
+    paddingHorizontal: Theme.spacing.l,
+    paddingVertical: 4,
+  },
+  leaderPoints: {
+    backgroundColor: Theme.colors.primary2,
+    borderColor: Theme.colors.primarySoft,
+  },
+  playerWinsText: {
+    color: Theme.colors.gray,
+    fontFamily: Theme.fonts.onestBold,
+    fontSize: Theme.sizes.h4,
+  },
+  leaderPointsText: {
+    color: Theme.colors.primarySoft,
   },
 })

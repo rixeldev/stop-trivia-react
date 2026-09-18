@@ -38,6 +38,7 @@ import { Screen } from "@/components/ui/Screen"
 import { Theme } from "@/constants/Theme"
 import { FocusInput } from "@/components/FocusInput"
 import { PlayingButton } from "@/components/PlayingButton"
+import { Badge } from "@/components/ui/Badge"
 import Fire from "@/db/Fire"
 import { sixDigit } from "@/libs/randomId"
 import { StopModel, GameStatus } from "@/interfaces/Game"
@@ -59,9 +60,26 @@ import {
   TestIds,
 } from "react-native-google-mobile-ads"
 import { Loading } from "@/components/Loading"
+import { LinearGradient } from "expo-linear-gradient"
 import { adInterstitialId } from "@/db/firebaseConfig"
 
 const adUnitId = __DEV__ ? TestIds.INTERSTITIAL : adInterstitialId
+
+const leftColumn = [
+  { key: "name", label: "name" },
+  { key: "country", label: "country" },
+  { key: "animal", label: "animal" },
+  { key: "food", label: "food" },
+  { key: "object", label: "object" },
+] as const
+
+const rightColumn = [
+  { key: "lastName", label: "last_name" },
+  { key: "color", label: "color" },
+  { key: "artist", label: "artist" },
+  { key: "fruit", label: "fruit" },
+  { key: "profession", label: "profession" },
+] as const
 
 export default function Stop() {
   const [gameData, setGameData] = useState<StopModel | null>(null)
@@ -134,7 +152,7 @@ export default function Stop() {
       const backPress = () => handleBackPress()
       backHandlerRef.current = BackHandler.addEventListener(
         "hardwareBackPress",
-        backPress
+        backPress,
       )
 
       loadSettings()
@@ -145,7 +163,7 @@ export default function Stop() {
           backHandlerRef.current = null
         }
       }
-    }, [gameData, mode, vibrationEnabled.current])
+    }, [gameData, mode, vibrationEnabled.current]),
   )
 
   useEffect(() => {
@@ -173,7 +191,7 @@ export default function Stop() {
         if (Math.floor(Math.random() * 100) >= 50) {
           interstitial.show()
         }
-      }
+      },
     )
 
     const unsubscribeOpened = interstitial.addAdEventListener(
@@ -182,7 +200,7 @@ export default function Stop() {
         if (Platform.OS === "ios") {
           StatusBar.setHidden(true)
         }
-      }
+      },
     )
 
     const unsubscribeClosed = interstitial.addAdEventListener(
@@ -191,7 +209,7 @@ export default function Stop() {
         if (Platform.OS === "ios") {
           StatusBar.setHidden(false)
         }
-      }
+      },
     )
 
     interstitial.load()
@@ -251,7 +269,7 @@ export default function Stop() {
             ToastAndroid.showWithGravity(
               t("host_closed_game"),
               ToastAndroid.SHORT,
-              ToastAndroid.CENTER
+              ToastAndroid.CENTER,
             )
             navigation.goBack()
             if (timerRef.current) clearInterval(timerRef.current)
@@ -315,7 +333,7 @@ export default function Stop() {
         Fire.updateGame("stop", gameId, {
           players: currentGameData
             ? currentGameData.players.filter(
-                (player) => player.id !== getAuth().currentUser?.uid
+                (player) => player.id !== getAuth().currentUser?.uid,
               )
             : [],
           playersReady:
@@ -355,7 +373,7 @@ export default function Stop() {
           ToastAndroid.showWithGravity(
             t("you_are_alone"),
             ToastAndroid.SHORT,
-            ToastAndroid.CENTER
+            ToastAndroid.CENTER,
           )
           return
         }
@@ -365,14 +383,14 @@ export default function Stop() {
           ToastAndroid.showWithGravity(
             t("not_all_players_ready"),
             ToastAndroid.SHORT,
-            ToastAndroid.CENTER
+            ToastAndroid.CENTER,
           )
           return
         }
 
         const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
         const randomLetter = letters.charAt(
-          Math.floor(Math.random() * letters.length)
+          Math.floor(Math.random() * letters.length),
         )
         const serverTime = await Fire.getServerTimeMs(userId)
 
@@ -405,7 +423,7 @@ export default function Stop() {
 
     if (flag === "restart") {
       const allEmpty = Object.values(currentInputsRef.current).every(
-        (value) => !value || value.trim() === ""
+        (value) => !value || value.trim() === "",
       )
       if (!allEmpty) {
         setRestartModalVisible(true)
@@ -494,7 +512,7 @@ export default function Stop() {
       "stop",
       currentGameData.gameId,
       userId,
-      currentInputsRef.current
+      currentInputsRef.current,
     )
 
     if (timerRef.current) {
@@ -581,7 +599,7 @@ export default function Stop() {
     ToastAndroid.showWithGravity(
       t("copied_clipboard"),
       ToastAndroid.SHORT,
-      ToastAndroid.CENTER
+      ToastAndroid.CENTER,
     )
   }
 
@@ -622,7 +640,7 @@ export default function Stop() {
           duration: 150,
           useNativeDriver: true,
         }),
-      ])
+      ]),
     ).start()
   }
 
@@ -658,40 +676,17 @@ export default function Stop() {
     )
   }
 
+  const isInProgress = gameData?.gameStatus === GameStatus.IN_PROGRESS
+
   return (
     <Screen>
       {!connection && mode !== "offline" && (
-        <View
-          style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            justifyContent: "center",
-            alignItems: "center",
-            backgroundColor: Theme.colors.backdrop,
-            zIndex: 10,
-            gap: 16,
-          }}
-        >
-          <OfflineIcon size={64} color={Theme.colors.accent} />
-
-          <Text
-            style={{
-              color: Theme.colors.accent,
-              fontFamily: Theme.fonts.onestBold,
-              fontSize: Theme.sizes.h0,
-            }}
-          >
-            {t("you_are_offline")}
-          </Text>
-
-          <ActivityIndicator
-            size="large"
-            color={Theme.colors.accent}
-            style={{ width: 38, height: 38, alignSelf: "center" }}
-          />
+        <View style={styles.offlineOverlay}>
+          <View style={styles.offlineCard}>
+            <OfflineIcon size={56} color={Theme.colors.primarySoft} />
+            <Text style={styles.offlineTitle}>{t("you_are_offline")}</Text>
+            <ActivityIndicator size="large" color={Theme.colors.primarySoft} />
+          </View>
         </View>
       )}
 
@@ -705,7 +700,15 @@ export default function Stop() {
           },
           headerTitleAlign: "center",
           headerLeft: () => (
-            <BackIcon size={34} onPress={() => handleBackPress(gameData)} />
+            <Pressable
+              onPress={() => handleBackPress(gameData)}
+              style={({ pressed }) => [
+                styles.headerBtn,
+                { opacity: pressed ? 0.7 : 1 },
+              ]}
+            >
+              <BackIcon size={22} color={Theme.colors.primarySoft} />
+            </Pressable>
           ),
           headerRight: () =>
             mode !== "offline" && (
@@ -731,52 +734,32 @@ export default function Stop() {
               setIdModalVisible(false)
             }}
           >
-            <View style={styles.centeredView}>
+            <LinearGradient
+              colors={Theme.gradients.overlay}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 0, y: 1 }}
+              style={styles.centeredView}
+            >
               <TouchableWithoutFeedback>
                 <View style={styles.modalView}>
-                  <Text
-                    style={{
-                      color: Theme.colors.accent,
-                      fontFamily: Theme.fonts.onestBold,
-                      fontSize: Theme.sizes.h3,
-                      alignSelf: "center",
-                      marginBottom: 16,
-                    }}
-                  >
-                    {t("invite_friends")}
-                  </Text>
+                  <Badge variant="accent">Invite</Badge>
+                  <Text style={styles.modalTitle}>{t("invite_friends")}</Text>
 
-                  <View style={{ gap: 8 }}>
-                    <View
-                      style={{
-                        flexDirection: "row",
-                        gap: 8,
-                        alignItems: "center",
-                        justifyContent: "center",
-                      }}
-                    >
-                      <Text
-                        style={{
-                          color: Theme.colors.accent,
-                          fontFamily: Theme.fonts.onest,
-                          fontSize: Theme.sizes.h4,
-                        }}
-                      >
-                        {gameData?.gameId.toUpperCase()}
-                      </Text>
-
-                      <Pressable onPress={copyRoomCode}>
-                        {copied ? (
-                          <CheckIcon color={Theme.colors.accent} size={16} />
-                        ) : (
-                          <CopyIcon color={Theme.colors.accent} size={16} />
-                        )}
-                      </Pressable>
-                    </View>
+                  <View style={styles.roomCodeWrap}>
+                    <Text style={styles.roomCode}>
+                      {gameData?.gameId.toUpperCase()}
+                    </Text>
+                    <Pressable onPress={copyRoomCode} hitSlop={10}>
+                      {copied ? (
+                        <CheckIcon color={Theme.colors.green} size={24} />
+                      ) : (
+                        <CopyIcon color={Theme.colors.primarySoft} size={24} />
+                      )}
+                    </Pressable>
                   </View>
                 </View>
               </TouchableWithoutFeedback>
-            </View>
+            </LinearGradient>
           </TouchableWithoutFeedback>
         </Modal>
       )}
@@ -817,353 +800,170 @@ export default function Stop() {
         >
           <View style={{ flex: 1, width: "100%" }}>
             {mode !== "offline" && (
-              <View
-                style={{
-                  flexDirection: "column",
-                  justifyContent: "center",
-                  alignItems: "center",
-                  gap: 12,
-                  paddingVertical: 24,
-                }}
-              >
-                <Animated.Text
-                  style={{
-                    color: timerColor,
-                    fontFamily: Theme.fonts.onest,
-                    fontSize: Theme.sizes.h3,
-                    transform: [{ scale: scaleAnim }],
-                  }}
-                >
-                  {t("time_left")}: {formatTime(timeLeft)}
-                </Animated.Text>
+              <View style={styles.timerRow}>
+                <View style={styles.timerPill}>
+                  <Animated.Text
+                    style={[
+                      styles.timerText,
+                      { color: timerColor, transform: [{ scale: scaleAnim }] },
+                    ]}
+                  >
+                    {formatTime(timeLeft)}
+                  </Animated.Text>
+                  <Text style={styles.timerCaption}>{t("time_left")}</Text>
+                </View>
               </View>
             )}
 
-            <View
-              style={{
-                flex: 1,
-                flexDirection: "row",
-                gap: 18,
-              }}
-            >
-              <View style={styles.columns}>
-                <FocusInput
-                  editable={
-                    mode === "offline"
-                      ? true
-                      : gameData?.gameStatus === GameStatus.IN_PROGRESS &&
-                        !isStarting
+            {isInProgress ? (
+              <View style={styles.heroRow}>
+                <LinearGradient
+                  colors={
+                    isStarting || typeof countdown === "number"
+                      ? Theme.gradients.cardHigh
+                      : Theme.gradients.primaryDeep
                   }
-                  onChange={(text) => setInputs({ ...inputs, name: text })}
-                  value={inputs.name}
-                  placeholder={t("name")}
-                />
-                <FocusInput
-                  editable={
-                    mode === "offline"
-                      ? true
-                      : gameData?.gameStatus === GameStatus.IN_PROGRESS &&
-                        !isStarting
-                  }
-                  onChange={(text) => setInputs({ ...inputs, country: text })}
-                  value={inputs.country}
-                  placeholder={t("country")}
-                />
-                <FocusInput
-                  editable={
-                    mode === "offline"
-                      ? true
-                      : gameData?.gameStatus === GameStatus.IN_PROGRESS &&
-                        !isStarting
-                  }
-                  onChange={(text) => setInputs({ ...inputs, animal: text })}
-                  value={inputs.animal}
-                  placeholder={t("animal")}
-                />
-                <FocusInput
-                  editable={
-                    mode === "offline"
-                      ? true
-                      : gameData?.gameStatus === GameStatus.IN_PROGRESS &&
-                        !isStarting
-                  }
-                  onChange={(text) => setInputs({ ...inputs, food: text })}
-                  value={inputs.food}
-                  placeholder={t("food")}
-                />
-                <FocusInput
-                  editable={
-                    mode === "offline"
-                      ? true
-                      : gameData?.gameStatus === GameStatus.IN_PROGRESS &&
-                        !isStarting
-                  }
-                  onChange={(text) => setInputs({ ...inputs, object: text })}
-                  value={inputs.object}
-                  placeholder={t("object")}
-                />
-              </View>
-
-              <View style={styles.columns}>
-                <FocusInput
-                  editable={
-                    mode === "offline"
-                      ? true
-                      : gameData?.gameStatus === GameStatus.IN_PROGRESS &&
-                        !isStarting
-                  }
-                  onChange={(text) => setInputs({ ...inputs, lastName: text })}
-                  value={inputs.lastName}
-                  placeholder={t("last_name")}
-                />
-                <FocusInput
-                  editable={
-                    mode === "offline"
-                      ? true
-                      : gameData?.gameStatus === GameStatus.IN_PROGRESS &&
-                        !isStarting
-                  }
-                  onChange={(text) => setInputs({ ...inputs, color: text })}
-                  value={inputs.color}
-                  placeholder={t("color")}
-                />
-                <FocusInput
-                  editable={
-                    mode === "offline"
-                      ? true
-                      : gameData?.gameStatus === GameStatus.IN_PROGRESS &&
-                        !isStarting
-                  }
-                  onChange={(text) => setInputs({ ...inputs, artist: text })}
-                  value={inputs.artist}
-                  placeholder={t("artist")}
-                />
-                <FocusInput
-                  editable={
-                    mode === "offline"
-                      ? true
-                      : gameData?.gameStatus === GameStatus.IN_PROGRESS &&
-                        !isStarting
-                  }
-                  onChange={(text) => setInputs({ ...inputs, fruit: text })}
-                  value={inputs.fruit}
-                  placeholder={t("fruit")}
-                />
-                <FocusInput
-                  editable={
-                    mode === "offline"
-                      ? true
-                      : gameData?.gameStatus === GameStatus.IN_PROGRESS &&
-                        !isStarting
-                  }
-                  onChange={(text) =>
-                    setInputs({ ...inputs, profession: text })
-                  }
-                  value={inputs.profession}
-                  placeholder={t("profession")}
-                />
-              </View>
-            </View>
-
-            {gameData?.gameStatus === GameStatus.IN_PROGRESS &&
-            mode !== "offline" ? (
-              <View
-                style={{
-                  flexDirection: "column",
-                  justifyContent: "center",
-                  alignItems: "center",
-                  gap: 12,
-                  paddingTop: 12,
-                  paddingBottom: 24,
-                }}
-              >
-                <Text
-                  style={{
-                    color: Theme.colors.text,
-                    fontFamily: Theme.fonts.onestBold,
-                    fontSize: 96,
-                  }}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.letterBadge}
                 >
-                  {countdown}
-                </Text>
+                  <Text style={styles.heroChar}>{countdown}</Text>
+                </LinearGradient>
+                {!isStarting && (
+                  <Text style={styles.heroHint}>{t("fill_spaces")}</Text>
+                )}
               </View>
             ) : (
               gameData?.gameStatus === GameStatus.STOPPED && (
-                <View
-                  style={{
-                    flexDirection: "row",
-                    gap: 12,
-                    justifyContent: "center",
-                    alignItems: "center",
-                  }}
-                >
-                  {gameData?.players.length === 4 ||
-                    (mode === "offline" && (
-                      <Pressable
-                        onPress={() => handleSumPoints(25)}
-                        style={({ pressed }) => [
-                          {
-                            backgroundColor: pressed
-                              ? Theme.colors.background2
-                              : Theme.colors.primary2,
-                          },
-                          styles.buttons,
-                        ]}
-                      >
-                        <Text style={styles.texts}>25</Text>
-                      </Pressable>
-                    ))}
+                <View style={styles.pointsRow}>
+                  {(gameData?.players.length === 4 || mode === "offline") && (
+                    <ScoreChip value={25} onPress={handleSumPoints} />
+                  )}
 
-                  <Pressable
-                    onPress={() => handleSumPoints(50)}
-                    style={({ pressed }) => [
-                      {
-                        backgroundColor: pressed
-                          ? Theme.colors.background2
-                          : Theme.colors.primary2,
-                      },
-                      styles.buttons,
-                    ]}
-                  >
-                    <Text style={styles.texts}>50</Text>
-                  </Pressable>
+                  <ScoreChip value={50} onPress={handleSumPoints} />
 
-                  {gameData?.players.length === 3 ||
-                    (mode === "offline" && (
-                      <Pressable
-                        onPress={() => handleSumPoints(75)}
-                        style={({ pressed }) => [
-                          {
-                            backgroundColor: pressed
-                              ? Theme.colors.background2
-                              : Theme.colors.primary2,
-                          },
-                          styles.buttons,
-                        ]}
-                      >
-                        <Text style={styles.texts}>75</Text>
-                      </Pressable>
-                    ))}
+                  {(gameData?.players.length === 3 || mode === "offline") && (
+                    <ScoreChip value={75} onPress={handleSumPoints} />
+                  )}
 
-                  <Pressable
-                    onPress={() => handleSumPoints(100)}
-                    style={({ pressed }) => [
-                      {
-                        backgroundColor: pressed
-                          ? Theme.colors.background2
-                          : Theme.colors.primary2,
-                      },
-                      styles.buttons,
-                    ]}
-                  >
-                    <Text style={styles.texts}>100</Text>
-                  </Pressable>
+                  <ScoreChip value={100} onPress={handleSumPoints} />
                 </View>
               )
             )}
 
-            <View
-              style={{ flexDirection: "column", gap: 12, paddingVertical: 24 }}
-            >
-              <View
-                style={{
-                  flexDirection: "row",
-                  gap: 12,
-                  justifyContent: "center",
-                  alignItems: "center",
-                }}
-              >
-                {mode !== "offline" && (
-                  <Text style={styles.texts}>
-                    {t("round")}:{" "}
-                    {gameData?.round === 0 ? 1 : (gameData?.round ?? 0)}
-                  </Text>
-                )}
+            <View style={styles.boardWrap}>
+              <View style={styles.columns}>
+                <View style={styles.column}>
+                  {leftColumn.map((field) => (
+                    <FocusInput
+                      key={field.key}
+                      editable={
+                        mode === "offline" ? true : isInProgress && !isStarting
+                      }
+                      onChange={(text) =>
+                        setInputs({ ...inputs, [field.key]: text })
+                      }
+                      value={inputs[field.key]}
+                      placeholder={t(field.label)}
+                    />
+                  ))}
+                </View>
 
-                <Text style={styles.texts}>
-                  {t("your_points")}: {points}
-                </Text>
+                <View style={styles.column}>
+                  {rightColumn.map((field) => (
+                    <FocusInput
+                      key={field.key}
+                      editable={
+                        mode === "offline" ? true : isInProgress && !isStarting
+                      }
+                      onChange={(text) =>
+                        setInputs({ ...inputs, [field.key]: text })
+                      }
+                      value={inputs[field.key]}
+                      placeholder={t(field.label)}
+                    />
+                  ))}
+                </View>
               </View>
+            </View>
 
-              <View
-                style={{
-                  flexDirection: "row",
-                  gap: 12,
-                  justifyContent: "center",
-                  alignItems: "center",
-                }}
-              >
-                {gameData?.gameStatus !== GameStatus.IN_PROGRESS && (
-                  <>
-                    {mode === "online" && (
-                      <PlayingButton
-                        flag="play"
-                        onPress={() => handlePress("play")}
-                        icon={<PlayIcon size={30} />}
-                      />
-                    )}
+            <View style={styles.statsRow}>
+              {mode !== "offline" && (
+                <StatChip
+                  label={t("round")}
+                  value={`${gameData?.round === 0 ? 1 : (gameData?.round ?? 0)}`}
+                />
+              )}
+              <StatChip label={t("your_points")} value={`${points}`} />
+            </View>
 
-                    {mode === "join" && !ready && (
-                      <PlayingButton
-                        flag="ready"
-                        onPress={() => handlePress("ready")}
-                        icon={<CheckIcon size={30} />}
-                      />
-                    )}
-                  </>
-                )}
+            <View style={styles.actionsRow}>
+              {gameData?.gameStatus !== GameStatus.IN_PROGRESS && (
+                <>
+                  {mode === "online" && (
+                    <ActionButton
+                      flag="play"
+                      label={t("play")}
+                      onPress={() => handlePress("play")}
+                      icon={<PlayIcon size={26} color={Theme.colors.text} />}
+                    />
+                  )}
 
-                {gameData?.gameStatus === GameStatus.IN_PROGRESS && (
-                  <PlayingButton
-                    flag="stop"
-                    onPress={() => handlePress("stop")}
-                    icon={
-                      <Image
-                        source={require("@/assets/icons/ic_brand.png")}
-                        style={{ width: 30, height: 30 }}
-                      />
-                    }
-                  />
-                )}
+                  {mode === "join" && !ready && (
+                    <ActionButton
+                      flag="ready"
+                      label="Ready"
+                      onPress={() => handlePress("ready")}
+                      icon={<CheckIcon size={24} color={Theme.colors.text} />}
+                    />
+                  )}
+                </>
+              )}
 
-                {gameData?.gameStatus !== GameStatus.IN_PROGRESS && (
-                  <PlayingButton
-                    flag="restart"
-                    onPress={() => handlePress("restart")}
-                    icon={<RestartIcon size={30} />}
-                  />
-                )}
-              </View>
+              {isInProgress && (
+                <ActionButton
+                  flag="stop"
+                  label="STOP"
+                  onPress={() => handlePress("stop")}
+                  icon={
+                    <Image
+                      source={require("@/assets/icons/ic_brand.png")}
+                      style={{ width: 26, height: 26 }}
+                    />
+                  }
+                />
+              )}
+
+              {gameData?.gameStatus !== GameStatus.IN_PROGRESS && (
+                <ActionButton
+                  flag="restart"
+                  label="Restart"
+                  onPress={() => handlePress("restart")}
+                  icon={
+                    <RestartIcon size={24} color={Theme.colors.secondary} />
+                  }
+                />
+              )}
             </View>
           </View>
         </ScrollView>
       </Pressable>
 
-      <BottomSheetModal title={t("players")} ref={sheetRef}>
-        <View style={{ marginBottom: 8, gap: 8 }}>
-          <View
-            style={{
-              flexDirection: "row",
-              gap: 8,
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <Text
-              style={{
-                color: Theme.colors.accent,
-                fontFamily: Theme.fonts.onest,
-                fontSize: Theme.sizes.h4,
-              }}
-            >
+      <BottomSheetModal
+        title={t("players")}
+        ref={sheetRef}
+        icon={<UsersIcon size={20} color={Theme.colors.primarySoft} />}
+      >
+        <View style={{ marginBottom: 8, gap: Theme.spacing.s }}>
+          <View style={styles.roomRow}>
+            <Text style={styles.roomRowCode}>
               {gameData?.gameId.toUpperCase()}
             </Text>
-
-            <Pressable onPress={copyRoomCode}>
+            <Pressable onPress={copyRoomCode} hitSlop={10}>
               {copied ? (
-                <CheckIcon color={Theme.colors.accent} size={16} />
+                <CheckIcon color={Theme.colors.green} size={18} />
               ) : (
-                <CopyIcon color={Theme.colors.accent} size={16} />
+                <CopyIcon color={Theme.colors.primarySoft} size={18} />
               )}
             </Pressable>
           </View>
@@ -1171,67 +971,55 @@ export default function Stop() {
           {gameData &&
             gameData.players
               .sort((a, b) => b.points - a.points)
-              .map((player) => (
+              .map((player, index) => (
                 <Pressable
                   key={player.id}
                   onPress={() => handlePlayerInputsModal(player)}
                   style={({ pressed }) => [
                     {
-                      opacity: pressed ? 0.6 : 1,
-                      backgroundColor: Theme.colors.background2,
-                      padding: 16,
-                      borderRadius: 14,
+                      opacity: pressed ? 0.75 : 1,
+                      backgroundColor: Theme.colors.surfaceHigh,
+                      padding: Theme.spacing.m,
+                      borderRadius: Theme.radii.lg,
                       justifyContent: "space-between",
                       alignItems: "center",
                       flexDirection: "row",
-                      gap: 8,
+                      gap: Theme.spacing.m,
+                      borderWidth: 1,
+                      borderColor: Theme.colors.borderSoft,
                     },
                   ]}
                 >
-                  <View
-                    style={{
-                      width: 38,
-                      height: 38,
-                      justifyContent: "center",
-                      alignItems: "center",
-                      backgroundColor: Theme.colors.primary2,
-                      borderRadius: "100%",
-                      overflow: "hidden",
-                    }}
-                  >
+                  <View style={styles.avatar}>
                     {!player.photoURL || player.photoURL === "" ? (
-                      <UserIcon size={32} color={Theme.colors.accent} />
+                      <UserIcon size={24} color={Theme.colors.primarySoft} />
                     ) : (
                       <Image
-                        style={{
-                          objectFit: "cover",
-                          width: "100%",
-                          height: "100%",
-                        }}
+                        style={styles.avatarImage}
                         source={{ uri: player.photoURL }}
                       />
                     )}
                   </View>
-                  <Text
-                    style={{
-                      flex: 1,
-                      color: Theme.colors.gray,
-                      fontFamily: Theme.fonts.onestBold,
-                      fontSize: Theme.sizes.h3,
-                      textAlign: "left",
-                    }}
-                  >
+
+                  <Text style={styles.playerName} numberOfLines={1}>
                     {player.name}
                   </Text>
-                  <Text
-                    style={{
-                      color: Theme.colors.gray,
-                      fontFamily: Theme.fonts.onest,
-                      fontSize: Theme.sizes.h3,
-                    }}
+
+                  <View
+                    style={[
+                      styles.playerPoints,
+                      index === 0 && styles.leaderPoints,
+                    ]}
                   >
-                    {player.points}
-                  </Text>
+                    <Text
+                      style={[
+                        styles.playerPointsText,
+                        index === 0 && styles.leaderPointsText,
+                      ]}
+                    >
+                      {player.points}
+                    </Text>
+                  </View>
                 </Pressable>
               ))}
         </View>
@@ -1250,21 +1038,29 @@ const CurrentPlayers = ({
   return (
     <Pressable
       onPress={onPress}
+      hitSlop={8}
       style={({ pressed }) => [
         {
-          opacity: pressed ? 0.6 : 1,
+          opacity: pressed ? 0.7 : 1,
           flexDirection: "row",
-          gap: 8,
+          gap: Theme.spacing.s,
           alignItems: "center",
           justifyContent: "center",
+          backgroundColor: Theme.colors.surface,
+          borderWidth: 1,
+          borderColor: Theme.colors.borderSoft,
+          paddingHorizontal: Theme.spacing.m,
+          paddingVertical: 6,
+          borderRadius: Theme.radii.pill,
         },
       ]}
     >
-      <UsersIcon color={Theme.colors.accent} />
+      <UsersIcon size={16} color={Theme.colors.primarySoft} />
       <Text
         style={{
-          color: Theme.colors.accent,
+          color: Theme.colors.primarySoft,
           fontFamily: Theme.fonts.onestBold,
+          fontSize: Theme.sizes.h5,
         }}
       >
         {players}/4
@@ -1273,45 +1069,352 @@ const CurrentPlayers = ({
   )
 }
 
+const ScoreChip = ({
+  value,
+  onPress,
+}: {
+  value: number
+  onPress: (value: number) => void
+}) => {
+  return (
+    <Pressable
+      onPress={() => onPress(value)}
+      style={({ pressed }) => [
+        {
+          opacity: pressed ? 0.75 : 1,
+          transform: [{ scale: pressed ? 0.94 : 1 }],
+        },
+        styles.scoreChip,
+      ]}
+    >
+      <Text style={styles.scoreChipSign}>+</Text>
+      <Text style={styles.scoreChipValue}>{value}</Text>
+    </Pressable>
+  )
+}
+
+const StatChip = ({ label, value }: { label: string; value: string }) => {
+  return (
+    <View style={styles.statChip}>
+      <Text style={styles.statValue}>{value}</Text>
+      <Text style={styles.statLabel}>{label}</Text>
+    </View>
+  )
+}
+
+const ActionButton = ({
+  flag,
+  label,
+  onPress,
+  icon,
+}: {
+  flag: string
+  label: string
+  onPress: (flag: string) => void
+  icon: React.ReactNode
+}) => {
+  return (
+    <View style={styles.actionWrap}>
+      <PlayingButton flag={flag} onPress={onPress} icon={icon} />
+      <Text style={styles.actionLabel}>{label}</Text>
+    </View>
+  )
+}
+
 const styles = StyleSheet.create({
-  columns: {
-    flex: 1,
-    flexDirection: "column",
-    gap: 18,
+  offlineOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: Theme.colors.backdrop,
+    zIndex: 10,
+    padding: Theme.spacing.xl,
   },
-  buttons: {
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 24,
-    alignSelf: "flex-start",
+  offlineCard: {
+    alignItems: "center",
+    gap: Theme.spacing.l,
+    backgroundColor: Theme.colors.surface,
+    borderWidth: 1,
+    borderColor: Theme.colors.borderSoft,
+    borderRadius: Theme.radii.xl,
+    padding: Theme.spacing.xxxl,
+    width: "100%",
+    maxWidth: 420,
+    ...Theme.shadows.lg,
   },
-  texts: {
-    color: Theme.colors.lightGray,
-    alignSelf: "flex-start",
+  offlineTitle: {
+    color: Theme.colors.text,
     fontFamily: Theme.fonts.onestBold,
+    fontSize: Theme.sizes.h0,
   },
-  modalView: {
-    margin: 20,
-    backgroundColor: Theme.colors.modal,
-    borderRadius: 20,
-    padding: 20,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
+  headerBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: Theme.colors.surface,
+    borderWidth: 1,
+    borderColor: Theme.colors.borderSoft,
+    alignItems: "center",
+    justifyContent: "center",
   },
   centeredView: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "rgba(0,0,0,0.8)",
+    padding: 20,
   },
-  modalBottomButtons: {
-    padding: 12,
-    borderRadius: 16,
+  modalView: {
+    width: "100%",
+    maxWidth: 400,
+    backgroundColor: Theme.colors.surface,
+    borderRadius: Theme.radii.xl,
+    padding: Theme.spacing.xl,
+    borderWidth: 1,
+    borderColor: Theme.colors.borderSoft,
+    alignItems: "center",
+    gap: Theme.spacing.l,
+    ...Theme.shadows.lg,
+  },
+  modalTitle: {
+    color: Theme.colors.text,
+    fontFamily: Theme.fonts.onestBold,
+    fontSize: Theme.sizes.h3,
+  },
+  roomCodeWrap: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: Theme.spacing.m,
+    backgroundColor: Theme.colors.surfaceHigh,
+    borderWidth: 1,
+    borderColor: Theme.colors.borderSoft,
+    borderRadius: Theme.radii.lg,
+    paddingVertical: Theme.spacing.m,
+    paddingHorizontal: Theme.spacing.xl,
+    minWidth: 180,
+  },
+  roomCode: {
+    color: Theme.colors.primarySoft,
+    fontFamily: Theme.fonts.onestBold,
+    fontSize: Theme.sizes.h3,
+    letterSpacing: 4,
+  },
+  timerRow: {
+    justifyContent: "center",
+    alignItems: "center",
+    paddingVertical: Theme.spacing.l,
+  },
+  timerPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Theme.spacing.m,
+    backgroundColor: Theme.colors.surface,
+    borderWidth: 1,
+    borderColor: Theme.colors.borderSoft,
+    borderRadius: Theme.radii.pill,
+    paddingVertical: Theme.spacing.s,
+    paddingHorizontal: Theme.spacing.xl,
+    ...Theme.shadows.md,
+  },
+  timerText: {
+    fontFamily: Theme.fonts.onestBold,
+    fontSize: Theme.sizes.h3,
+    fontVariant: ["tabular-nums"],
+  },
+  timerCaption: {
+    color: Theme.colors.gray,
+    fontFamily: Theme.fonts.onest,
+    fontSize: Theme.sizes.h6,
+    textTransform: "uppercase",
+    letterSpacing: 1,
+  },
+  heroRow: {
+    flexDirection: "column",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: Theme.spacing.m,
+    paddingVertical: Theme.spacing.l,
+  },
+  letterBadge: {
+    width: 128,
+    height: 128,
+    borderRadius: 64,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: Theme.colors.borderSoft,
+    ...Theme.shadows.glow,
+  },
+  heroChar: {
+    color: Theme.colors.text,
+    fontFamily: Theme.fonts.onestBold,
+    fontSize: 72,
+  },
+  heroHint: {
+    color: Theme.colors.gray,
+    fontFamily: Theme.fonts.onest,
+    fontSize: Theme.sizes.h5,
+  },
+  pointsRow: {
+    flexDirection: "column",
+    alignItems: "center",
+    gap: Theme.spacing.m,
+    paddingVertical: Theme.spacing.m,
+  },
+  pointsScoreTitle: {
+    color: Theme.colors.text,
+    fontFamily: Theme.fonts.onestBold,
+    fontSize: Theme.sizes.h3,
+  },
+  boardWrap: {
+    gap: Theme.spacing.m,
+  },
+  boardHeader: {
+    alignItems: "center",
+  },
+  columns: {
+    flexDirection: "row",
+    gap: Theme.spacing.m,
+  },
+  column: {
+    flex: 1,
+    flexDirection: "column",
+    gap: Theme.spacing.m,
+  },
+  statsRow: {
+    flex: 1,
+    flexDirection: "row",
+    gap: Theme.spacing.m,
+    justifyContent: "center",
+    alignItems: "flex-end",
+    paddingVertical: Theme.spacing.xl,
+  },
+  statChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Theme.spacing.s,
+    backgroundColor: Theme.colors.surface,
+    borderWidth: 1,
+    borderColor: Theme.colors.borderSoft,
+    borderRadius: Theme.radii.pill,
+    paddingVertical: Theme.spacing.s,
+    paddingHorizontal: Theme.spacing.l,
+    minWidth: 96,
+    justifyContent: "center",
+  },
+  statValue: {
+    color: Theme.colors.primarySoft,
+    fontFamily: Theme.fonts.onestBold,
+    fontSize: Theme.sizes.h4,
+    fontVariant: ["tabular-nums"],
+  },
+  statLabel: {
+    color: Theme.colors.gray,
+    fontFamily: Theme.fonts.onest,
+    fontSize: Theme.sizes.h6,
+    textTransform: "uppercase",
+    letterSpacing: 0.8,
+  },
+  actionsRow: {
+    flexDirection: "row",
+    gap: Theme.spacing.l,
+    justifyContent: "center",
+    alignItems: "flex-start",
+    paddingBottom: Theme.spacing.xxl,
+  },
+  actionWrap: {
+    alignItems: "center",
+    gap: Theme.spacing.s,
+  },
+  actionLabel: {
+    color: Theme.colors.lightGray,
+    fontFamily: Theme.fonts.onestBold,
+    fontSize: Theme.sizes.h6,
+    textTransform: "uppercase",
+    letterSpacing: 0.8,
+  },
+  scoreChip: {
+    minWidth: 72,
+    paddingVertical: Theme.spacing.m,
+    paddingHorizontal: Theme.spacing.l,
+    borderRadius: Theme.radii.pill,
+    backgroundColor: Theme.colors.surface,
+    borderWidth: 1,
+    borderColor: Theme.colors.borderSoft,
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: Theme.spacing.xs,
+    ...Theme.shadows.sm,
+  },
+  scoreChipSign: {
+    color: Theme.colors.primarySoft,
+    fontFamily: Theme.fonts.onestBold,
+    fontSize: Theme.sizes.h4,
+  },
+  scoreChipValue: {
+    color: Theme.colors.text,
+    fontFamily: Theme.fonts.onestBold,
+    fontSize: Theme.sizes.h4,
+  },
+  roomRow: {
+    flexDirection: "row",
+    gap: Theme.spacing.s,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  roomRowCode: {
+    color: Theme.colors.primarySoft,
+    fontFamily: Theme.fonts.onestBold,
+    fontSize: Theme.sizes.h4,
+    letterSpacing: 3,
+  },
+  avatar: {
+    width: 40,
+    height: 40,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: Theme.colors.surface,
+    borderWidth: 1,
+    borderColor: Theme.colors.borderSoft,
+    borderRadius: 20,
+    overflow: "hidden",
+  },
+  avatarImage: {
+    width: "100%",
+    height: "100%",
+    resizeMode: "cover",
+  },
+  playerName: {
+    flex: 1,
+    color: Theme.colors.lightGray,
+    fontFamily: Theme.fonts.onestBold,
+    fontSize: Theme.sizes.h4,
+    textAlign: "left",
+  },
+  playerPoints: {
+    backgroundColor: Theme.colors.surface,
+    borderWidth: 1,
+    borderColor: Theme.colors.borderSoft,
+    borderRadius: Theme.radii.pill,
+    paddingHorizontal: Theme.spacing.l,
+    paddingVertical: 4,
+  },
+  leaderPoints: {
+    backgroundColor: Theme.colors.primary2,
+    borderColor: Theme.colors.primarySoft,
+  },
+  playerPointsText: {
+    color: Theme.colors.gray,
+    fontFamily: Theme.fonts.onestBold,
+    fontSize: Theme.sizes.h4,
+    fontVariant: ["tabular-nums"],
+  },
+  leaderPointsText: {
+    color: Theme.colors.primarySoft,
   },
 })

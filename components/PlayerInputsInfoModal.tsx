@@ -1,5 +1,6 @@
 import { Theme } from "@/constants/Theme"
-import { Player } from "@/interfaces/Player"
+import { StopPlayer } from "@/interfaces/Player"
+import { StopGameInputs } from "@/interfaces/StopGameInputs"
 import { useTranslation } from "react-i18next"
 import {
   Modal,
@@ -8,12 +9,27 @@ import {
   TouchableWithoutFeedback,
   View,
 } from "react-native"
+import { LinearGradient } from "expo-linear-gradient"
+import { ListIcon } from "./ui/Icons"
 
 interface Props {
-  player: Player | null
+  player: StopPlayer | null
   modalVisible: boolean
   onRequestClose: () => void
 }
+
+const fieldKeys: { key: keyof StopGameInputs; label: string }[] = [
+  { key: "name", label: "name" },
+  { key: "lastName", label: "last_name" },
+  { key: "country", label: "country" },
+  { key: "color", label: "color" },
+  { key: "animal", label: "animal" },
+  { key: "artist", label: "artist" },
+  { key: "food", label: "food" },
+  { key: "fruit", label: "fruit" },
+  { key: "object", label: "object" },
+  { key: "profession", label: "profession" },
+]
 
 export const PlayerInputsInfoModal = ({
   player,
@@ -32,137 +48,52 @@ export const PlayerInputsInfoModal = ({
       <TouchableWithoutFeedback onPress={onRequestClose}>
         <View style={styles.centeredView}>
           <TouchableWithoutFeedback>
-            <View style={styles.modalView}>
-              <Text
-                style={{
-                  color: Theme.colors.accent,
-                  fontFamily: Theme.fonts.onestBold,
-                  fontSize: Theme.sizes.h3,
-                  alignSelf: "center",
-                  marginBottom: 16,
-                }}
-              >
-                {player?.name}
-              </Text>
+            <LinearGradient
+              colors={Theme.gradients.overlay}
+              style={styles.backdrop}
+            >
+              <View style={styles.sheet}>
+                <View style={styles.handle} />
 
-              <View
-                style={{
-                  gap: 8,
-                  flexDirection: "column",
-                }}
-              >
-                <Text
-                  style={{
-                    color: Theme.colors.gray,
-                    fontFamily: Theme.fonts.onest,
-                    backgroundColor: Theme.colors.background2,
-                    borderRadius: 8,
-                    padding: 12,
-                  }}
-                >
-                  {t("name")}: {player?.inputs?.name}
-                </Text>
-                <Text
-                  style={{
-                    color: Theme.colors.gray,
-                    fontFamily: Theme.fonts.onest,
-                    backgroundColor: Theme.colors.background2,
-                    borderRadius: 8,
-                    padding: 12,
-                  }}
-                >
-                  {t("last_name")}: {player?.inputs?.lastName}
-                </Text>
-                <Text
-                  style={{
-                    color: Theme.colors.gray,
-                    fontFamily: Theme.fonts.onest,
-                    backgroundColor: Theme.colors.background2,
-                    borderRadius: 8,
-                    padding: 12,
-                  }}
-                >
-                  {t("country")}: {player?.inputs?.country}
-                </Text>
-                <Text
-                  style={{
-                    color: Theme.colors.gray,
-                    fontFamily: Theme.fonts.onest,
-                    backgroundColor: Theme.colors.background2,
-                    borderRadius: 8,
-                    padding: 12,
-                  }}
-                >
-                  {t("color")}: {player?.inputs?.color}
-                </Text>
-                <Text
-                  style={{
-                    color: Theme.colors.gray,
-                    fontFamily: Theme.fonts.onest,
-                    backgroundColor: Theme.colors.background2,
-                    borderRadius: 8,
-                    padding: 12,
-                  }}
-                >
-                  {t("animal")}: {player?.inputs?.animal}
-                </Text>
-                <Text
-                  style={{
-                    color: Theme.colors.gray,
-                    fontFamily: Theme.fonts.onest,
-                    backgroundColor: Theme.colors.background2,
-                    borderRadius: 8,
-                    padding: 12,
-                  }}
-                >
-                  {t("artist")}: {player?.inputs?.artist}
-                </Text>
-                <Text
-                  style={{
-                    color: Theme.colors.gray,
-                    fontFamily: Theme.fonts.onest,
-                    backgroundColor: Theme.colors.background2,
-                    borderRadius: 8,
-                    padding: 12,
-                  }}
-                >
-                  {t("food")}: {player?.inputs?.food}
-                </Text>
-                <Text
-                  style={{
-                    color: Theme.colors.gray,
-                    fontFamily: Theme.fonts.onest,
-                    backgroundColor: Theme.colors.background2,
-                    borderRadius: 8,
-                    padding: 12,
-                  }}
-                >
-                  {t("fruit")}: {player?.inputs?.fruit}
-                </Text>
-                <Text
-                  style={{
-                    color: Theme.colors.gray,
-                    fontFamily: Theme.fonts.onest,
-                    backgroundColor: Theme.colors.background2,
-                    borderRadius: 8,
-                    padding: 12,
-                  }}
-                >
-                  {t("object")}: {player?.inputs?.object}
-                </Text>
-                <Text
-                  style={{
-                    color: Theme.colors.gray,
-                    fontFamily: Theme.fonts.onest,
-                    backgroundColor: Theme.colors.background2,
-                    borderRadius: 8,
-                    padding: 12,
-                  }}
-                >
-                  {t("profession")}: {player?.inputs?.profession}
-                </Text>
+                <View style={styles.header}>
+                  <View
+                    style={{
+                      width: 48,
+                      height: 48,
+                      borderRadius: 24,
+                      backgroundColor: Theme.colors.primary2,
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <ListIcon color={Theme.colors.primarySoft} size={24} />
+                  </View>
+                  <View style={{ flex: 1, gap: 2 }}>
+                    <Text style={styles.name}>{player?.name}</Text>
+                    <Text style={styles.subtitle}>
+                      {t("players")} · {t("fill_spaces")}
+                    </Text>
+                  </View>
+                </View>
+
+                <View style={styles.rows}>
+                  {fieldKeys.map(({ key, label }) => (
+                    <View key={key} style={styles.row}>
+                      <Text style={styles.rowLabel}>{t(label)}</Text>
+                      <Text
+                        style={[
+                          styles.rowValue,
+                          !player?.inputs?.[key] && styles.rowEmpty,
+                        ]}
+                        numberOfLines={1}
+                      >
+                        {player?.inputs?.[key] || "—"}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
               </View>
-            </View>
+            </LinearGradient>
           </TouchableWithoutFeedback>
         </View>
       </TouchableWithoutFeedback>
@@ -171,39 +102,76 @@ export const PlayerInputsInfoModal = ({
 }
 
 const styles = StyleSheet.create({
-  columns: {
-    flex: 1,
-    flexDirection: "column",
-    gap: 18,
-  },
-  texts: {
-    color: Theme.colors.lightGray,
-    alignSelf: "flex-start",
-    fontFamily: Theme.fonts.onestBold,
-  },
-  modalView: {
-    margin: 20,
-    backgroundColor: Theme.colors.modal,
-    borderRadius: 20,
-    padding: 20,
-    minWidth: 256,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
-  },
   centeredView: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "rgba(0,0,0,0.8)",
+    justifyContent: "flex-end",
   },
-  modalBottomButtons: {
-    padding: 12,
-    borderRadius: 16,
+  backdrop: {
+    flex: 1,
+    padding: Theme.spacing.l,
+    justifyContent: "flex-end",
+  },
+  sheet: {
+    backgroundColor: Theme.colors.surface,
+    borderTopLeftRadius: Theme.radii.xxl,
+    borderTopRightRadius: Theme.radii.xxl,
+    padding: Theme.spacing.xl,
+    paddingBottom: Theme.spacing.xxxl,
+    borderWidth: 1,
+    borderColor: Theme.colors.borderSoft,
+    ...Theme.shadows.lg,
+  },
+  handle: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: Theme.colors.darkGray,
+    alignSelf: "center",
+    marginBottom: Theme.spacing.l,
+  },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Theme.spacing.m,
+    marginBottom: Theme.spacing.l,
+  },
+  name: {
+    color: Theme.colors.text,
+    fontFamily: Theme.fonts.onestBold,
+    fontSize: Theme.sizes.h3,
+  },
+  subtitle: {
+    color: Theme.colors.gray,
+    fontFamily: Theme.fonts.onest,
+    fontSize: Theme.sizes.h6,
+  },
+  rows: {
+    gap: Theme.spacing.s,
+  },
+  row: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: Theme.spacing.m,
+    paddingVertical: Theme.spacing.m,
+    paddingHorizontal: Theme.spacing.l,
+    borderRadius: Theme.radii.m,
+    backgroundColor: Theme.colors.surfaceHigh,
+    borderWidth: 1,
+    borderColor: Theme.colors.borderSoft,
+  },
+  rowLabel: {
+    color: Theme.colors.gray,
+    fontFamily: Theme.fonts.onest,
+    fontSize: Theme.sizes.h5,
+  },
+  rowValue: {
+    color: Theme.colors.text,
+    fontFamily: Theme.fonts.onestBold,
+    fontSize: Theme.sizes.h5,
+    flexShrink: 1,
+  },
+  rowEmpty: {
+    color: Theme.colors.darkGray,
   },
 })

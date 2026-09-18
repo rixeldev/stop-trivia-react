@@ -1,71 +1,82 @@
 import { Theme } from "@/constants/Theme"
-import {
-  Animated,
-  Linking,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native"
+import { Linking, StyleSheet, Text, View } from "react-native"
 import { UpdateIcon } from "./ui/Icons"
 import { useTranslation } from "react-i18next"
-import { useState } from "react"
+import { Screen } from "@/components/ui/Screen"
+import { PrimaryButton } from "@/components/ui/PrimaryButton"
 
 export const AppVersionUpdate = () => {
-  const [btnScale] = useState(new Animated.Value(1))
-
   const { t } = useTranslation()
 
-  const handlePressIn = () =>
-    Animated.spring(btnScale, { toValue: 0.97, useNativeDriver: true }).start()
-  const handlePressOut = () =>
-    Animated.spring(btnScale, { toValue: 1, useNativeDriver: true }).start()
-
   return (
-    <View style={styles.container}>
-      <UpdateIcon color={Theme.colors.accent} size={132} />
-      <Text style={styles.title}>{t("update_game")}</Text>
-      <Text style={styles.subtitle}>
-        {t("update_game_desc_1")}
-        {"\n"}
-        {t("update_game_desc_2")}
-      </Text>
-      <Animated.View
-        style={{ transform: [{ scale: btnScale }], width: "100%" }}
-      >
-        <Pressable
-          onPressIn={handlePressIn}
-          onPressOut={handlePressOut}
+    <Screen padding={0}>
+      <View style={styles.container}>
+        <View style={styles.iconWrap}>
+          <UpdateIcon color={Theme.colors.primarySoft} size={64} />
+        </View>
+
+        <View style={styles.titleWrap}>
+          <Text style={styles.tag}>{t("update")}</Text>
+          <Text style={styles.title}>{t("update_game")}</Text>
+        </View>
+
+        <Text style={styles.subtitle}>
+          {t("update_game_desc_1")}
+          {"\n"}
+          {t("update_game_desc_2")}
+        </Text>
+
+        <PrimaryButton
+          block
+          title={t("update")}
           onPress={() =>
             Linking.openURL(
               "https://play.google.com/store/apps/details?id=com.rilisentertainment.stoptriviaonline"
             )
           }
-          style={({ pressed }) => [styles.submit, pressed && { opacity: 0.9 }]}
-          accessibilityRole="button"
-          accessibilityLabel=" Update"
-        >
-          <Text style={styles.submitText}>{t("update")}</Text>
-        </Pressable>
-      </Animated.View>
-    </View>
+          style={{ marginTop: Theme.spacing.m }}
+        />
+      </View>
+    </Screen>
   )
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Theme.colors.background,
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 24,
-    gap: 12,
+    padding: Theme.spacing.xxl,
+    gap: Theme.spacing.l,
+  },
+  iconWrap: {
+    width: 132,
+    height: 132,
+    borderRadius: 66,
+    backgroundColor: Theme.colors.surfaceHigh,
+    borderWidth: 1,
+    borderColor: Theme.colors.borderSoft,
+    alignItems: "center",
+    justifyContent: "center",
+    ...Theme.shadows.glow,
+    marginBottom: Theme.spacing.s,
+  },
+  titleWrap: {
+    alignItems: "center",
+    gap: Theme.spacing.xs,
+  },
+  tag: {
+    fontSize: Theme.sizes.h5,
+    fontFamily: Theme.fonts.onestBold,
+    color: Theme.colors.primarySoft,
+    textTransform: "uppercase",
+    letterSpacing: 3,
   },
   title: {
-    fontSize: Theme.sizes.h1,
+    fontSize: Theme.sizes.display,
     fontFamily: Theme.fonts.onestBold,
     color: Theme.colors.text,
-    marginBottom: 12,
+    textAlign: "center",
   },
   subtitle: {
     fontSize: Theme.sizes.h4,
@@ -73,27 +84,6 @@ const styles = StyleSheet.create({
     color: Theme.colors.gray,
     textAlign: "center",
     lineHeight: 22,
-    marginBottom: 32,
-  },
-  hint: {
-    fontSize: Theme.sizes.h5,
-    color: Theme.colors.gray,
-    fontFamily: Theme.fonts.onest,
-  },
-  submit: {
-    backgroundColor: Theme.colors.primary,
-    padding: 14,
-    borderRadius: 14,
-    alignItems: "center",
-    marginTop: 6,
-    marginBottom: 12,
-    flexDirection: "row",
-    justifyContent: "center",
-    gap: 8,
-  },
-  submitText: {
-    color: Theme.colors.text,
-    fontSize: Theme.sizes.h4,
-    fontFamily: Theme.fonts.onestBold,
+    marginBottom: Theme.spacing.l,
   },
 })

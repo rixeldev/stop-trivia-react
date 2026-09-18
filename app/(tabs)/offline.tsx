@@ -7,8 +7,9 @@ import {
   Pressable,
   Keyboard,
   ScrollView,
+  StyleSheet,
 } from "react-native"
-import { HashIcon } from "@/components/ui/Icons"
+import { HashIcon, GameIcon } from "@/components/ui/Icons"
 import { Screen } from "@/components/ui/Screen"
 import { useFocusEffect, useRouter } from "expo-router"
 import { useStorage } from "@/hooks/useStorage"
@@ -17,6 +18,7 @@ import LottieView from "lottie-react-native"
 import ic from "@/assets/lotties/ic_gamepad.json"
 import ic_launcher from "@/assets/lotties/ic_brand.json"
 import { ModesButton } from "@/components/ModesButton"
+import { Badge } from "@/components/ui/Badge"
 import { useTranslation } from "react-i18next"
 import { WhiteSpace } from "@/components/WhiteSpace"
 
@@ -72,12 +74,8 @@ export default function Offline() {
   return (
     <Screen padding={0}>
       <ScrollView
-        style={{
-          flex: 1,
-          height: "100%",
-          width: "100%",
-          paddingHorizontal: 16,
-        }}
+        style={styles.scroll}
+        showsVerticalScrollIndicator={false}
       >
         <Pressable
           style={{ flex: 1 }}
@@ -85,55 +83,24 @@ export default function Offline() {
             Keyboard.dismiss()
           }}
         >
-          <View
-            style={{
-              flexDirection: "row",
-              justifyContent: "center",
-              marginTop: 16,
-              marginBottom: 26,
-              gap: 12,
-            }}
-          >
-            <LottieView
-              source={ic}
-              autoPlay
-              loop={false}
-              duration={2000}
-              style={{
-                width: 24,
-                height: 24,
-              }}
-            />
-
-            <Text
-              style={{
-                color: Theme.colors.text,
-                fontSize: Theme.sizes.h2,
-                fontFamily: Theme.fonts.onestBold,
-              }}
-            >
-              {t("offline_modes")}
-            </Text>
+          <View style={styles.header}>
+            <View style={styles.headerTop}>
+              <Badge variant="neutral">Offline</Badge>
+            </View>
 
             <LottieView
               source={ic}
               autoPlay
               loop={false}
               duration={2000}
-              style={{
-                width: 24,
-                height: 24,
-              }}
+              style={styles.heroLottie}
             />
+
+            <Text style={styles.heroTitle}>{t("offline_modes")}</Text>
+            <Text style={styles.heroSubtitle}>{t("play_offline_desc")}</Text>
           </View>
 
-          <View
-            style={{
-              flexDirection: "column",
-              alignItems: "center",
-              gap: 16,
-            }}
-          >
+          <View style={styles.modes}>
             <ModesButton
               icon={
                 <LottieView
@@ -151,7 +118,7 @@ export default function Offline() {
             />
 
             <ModesButton
-              icon={<HashIcon size={32} color={Theme.colors.accent} />}
+              icon={<GameIcon size={32} color={Theme.colors.primarySoft} />}
               title={`Tic Tac Toe ${t("offline")}`}
               flag="ttt-offline"
               image="tttOffline"
@@ -159,7 +126,7 @@ export default function Offline() {
             />
 
             <ModesButton
-              icon={<HashIcon size={32} color={Theme.colors.accent} />}
+              icon={<HashIcon size={32} color={Theme.colors.primarySoft} />}
               title={`Tic Tac Tuc Toe ${t("offline")}`}
               flag="tttt-offline"
               image="tttComputer"
@@ -174,3 +141,42 @@ export default function Offline() {
     </Screen>
   )
 }
+
+const styles = StyleSheet.create({
+  scroll: {
+    flex: 1,
+    height: "100%",
+    width: "100%",
+    paddingHorizontal: Theme.spacing.l,
+  },
+  header: {
+    alignItems: "center",
+    marginTop: Theme.spacing.l,
+    marginBottom: Theme.spacing.xxl,
+  },
+  headerTop: {
+    alignSelf: "center",
+  },
+  heroLottie: {
+    width: 64,
+    height: 64,
+    marginTop: Theme.spacing.m,
+  },
+  heroTitle: {
+    color: Theme.colors.text,
+    fontSize: Theme.sizes.h0,
+    fontFamily: Theme.fonts.onestBold,
+    marginTop: Theme.spacing.m,
+  },
+  heroSubtitle: {
+    color: Theme.colors.gray,
+    fontSize: Theme.sizes.h5,
+    fontFamily: Theme.fonts.onest,
+    marginTop: Theme.spacing.xs,
+  },
+  modes: {
+    flexDirection: "column",
+    alignItems: "center",
+    gap: Theme.spacing.l,
+  },
+})

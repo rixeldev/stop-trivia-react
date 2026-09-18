@@ -146,22 +146,55 @@ export default function Layout() {
                 animationDuration: 100,
                 contentStyle: { backgroundColor: Theme.colors.background },
                 headerStyle: { backgroundColor: Theme.colors.background },
+                headerShadowVisible: false,
                 headerTintColor: Theme.colors.text,
                 headerTitle: "Stop Trivia",
+                headerTitleAlign: "center",
                 headerTitleStyle: {
                   fontSize: Theme.sizes.h0,
                   fontFamily: Theme.fonts.onestBold,
+                  color: Theme.colors.text,
                 },
                 headerLeft: () => (
-                  <Image
-                    source={require("@/assets/icons/ic_brand.png")}
-                    style={{ width: 40, height: 40 }}
-                  />
+                  <View
+                    style={{
+                      width: 40,
+                      height: 40,
+                      borderRadius: 12,
+                      backgroundColor: Theme.colors.surface,
+                      borderWidth: 1,
+                      borderColor: Theme.colors.borderSoft,
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <Image
+                      source={require("@/assets/icons/ic_brand.png")}
+                      style={{ width: 28, height: 28 }}
+                    />
+                  </View>
                 ),
                 headerRight: () => (
                   <Link asChild href="/settings">
-                    <Pressable>
-                      <CogIcon color={Theme.colors.text} />
+                    <Pressable
+                      style={({ pressed }) => [
+                        {
+                          width: 40,
+                          height: 40,
+                          borderRadius: 12,
+                          backgroundColor: Theme.colors.surface,
+                          borderWidth: 1,
+                          borderColor: Theme.colors.borderSoft,
+                          alignItems: "center",
+                          justifyContent: "center",
+                          opacity: pressed ? 0.7 : 1,
+                        },
+                      ]}
+                    >
+                      <CogIcon
+                        color={Theme.colors.primarySoft}
+                        size={22}
+                      />
                     </Pressable>
                   </Link>
                 ),

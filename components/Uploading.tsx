@@ -1,5 +1,6 @@
 import { ProgressBar } from "@/components/ProgressBar"
 import { Theme } from "@/constants/Theme"
+import { LinearGradient } from "expo-linear-gradient"
 import { useTranslation } from "react-i18next"
 import { View, StyleSheet, Image, Modal, Text, Pressable } from "react-native"
 
@@ -29,60 +30,39 @@ export const Updaloading = ({
       visible={modalVisible}
       onRequestClose={() => {}}
     >
-      <View style={styles.centeredView}>
+      <LinearGradient
+        colors={Theme.gradients.overlay}
+        style={styles.centeredView}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 1 }}
+      >
         <View style={styles.modalView}>
-          <Text
-            style={{
-              color: Theme.colors.gray,
-              fontFamily: Theme.fonts.onestBold,
-              fontSize: Theme.sizes.h3,
-              alignSelf: "center",
-              marginBottom: 16,
-            }}
-          >
-            {t("uploading")}
-          </Text>
+          <Text style={styles.title}>{t("uploading")}</Text>
 
-          <View>
-            {image && (
+          {image && (
+            <View style={styles.previewWrap}>
               <Image
                 source={{ uri: image }}
-                style={{
-                  width: 100,
-                  height: 100,
-                  resizeMode: "contain",
-                  borderRadius: 6,
-                  alignSelf: "center",
-                }}
+                style={styles.preview}
+                resizeMode="cover"
               />
-            )}
-          </View>
+            </View>
+          )}
 
-          <View style={{ marginVertical: 12 }}>
+          <View style={styles.progressWrap}>
             <ProgressBar progress={progress} />
           </View>
 
           {!uploading && (
-            <View
-              style={{ flexDirection: "row", gap: 12, alignSelf: "flex-end" }}
-            >
+            <View style={styles.actions}>
               <Pressable
                 onPress={onClose}
                 style={({ pressed }) => [
-                  {
-                    backgroundColor: pressed
-                      ? Theme.colors.background2
-                      : Theme.colors.transparent,
-                  },
-                  styles.modalBottomButtons,
+                  { opacity: pressed ? 0.7 : 1 },
+                  styles.actionBtn,
                 ]}
               >
-                <Text
-                  style={{
-                    fontFamily: Theme.fonts.onest,
-                    color: Theme.colors.red,
-                  }}
-                >
+                <Text style={[styles.actionText, { color: Theme.colors.red }]}>
                   {t("cancel")}
                 </Text>
               </Pressable>
@@ -90,65 +70,91 @@ export const Updaloading = ({
               <Pressable
                 onPress={onAccept}
                 style={({ pressed }) => [
-                  {
-                    backgroundColor: pressed
-                      ? Theme.colors.background2
-                      : Theme.colors.transparent,
-                  },
-                  styles.modalBottomButtons,
+                  { opacity: pressed ? 0.75 : 1 },
+                  styles.acceptBtn,
                 ]}
               >
-                <Text
-                  style={{
-                    fontFamily: Theme.fonts.onest,
-                    color: Theme.colors.accent,
-                  }}
+                <LinearGradient
+                  colors={Theme.gradients.primary}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.acceptGradient}
                 >
-                  {t("accept")}
-                </Text>
+                  <Text style={[styles.actionText, { color: Theme.colors.text }]}>
+                    {t("accept")}
+                  </Text>
+                </LinearGradient>
               </Pressable>
             </View>
           )}
         </View>
-      </View>
+      </LinearGradient>
     </Modal>
   )
 }
 
 const styles = StyleSheet.create({
-  container: {
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  absolute: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    bottom: 0,
-    right: 0,
-  },
-  modalView: {
-    margin: 20,
-    backgroundColor: Theme.colors.modal,
-    borderRadius: 20,
-    padding: 20,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
-  },
   centeredView: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "rgba(0,0,0,0.8)",
+    padding: 20,
   },
-  modalBottomButtons: {
-    padding: 12,
-    borderRadius: 16,
+  modalView: {
+    width: "100%",
+    maxWidth: 360,
+    backgroundColor: Theme.colors.surface,
+    borderRadius: Theme.radii.xl,
+    padding: Theme.spacing.xl,
+    borderWidth: 1,
+    borderColor: Theme.colors.borderSoft,
+    alignItems: "center",
+    ...Theme.shadows.lg,
+  },
+  title: {
+    color: Theme.colors.text,
+    fontFamily: Theme.fonts.onestBold,
+    fontSize: Theme.sizes.h3,
+    marginBottom: Theme.spacing.l,
+  },
+  previewWrap: {
+    borderRadius: Theme.radii.lg,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: Theme.colors.borderSoft,
+    ...Theme.shadows.sm,
+  },
+  preview: {
+    width: 120,
+    height: 120,
+  },
+  progressWrap: {
+    marginVertical: Theme.spacing.xl,
+    width: "100%",
+    alignItems: "center",
+  },
+  actions: {
+    flexDirection: "row",
+    gap: Theme.spacing.m,
+    alignSelf: "flex-end",
+    width: "100%",
+    justifyContent: "flex-end",
+  },
+  actionBtn: {
+    paddingVertical: Theme.spacing.m,
+    paddingHorizontal: Theme.spacing.l,
+    borderRadius: Theme.radii.m,
+  },
+  actionText: {
+    fontFamily: Theme.fonts.onestBold,
+    fontSize: Theme.sizes.h4,
+  },
+  acceptBtn: {
+    borderRadius: Theme.radii.m,
+    overflow: "hidden",
+  },
+  acceptGradient: {
+    paddingVertical: Theme.spacing.m,
+    paddingHorizontal: Theme.spacing.xl,
   },
 })

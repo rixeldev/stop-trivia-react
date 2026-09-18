@@ -4,6 +4,7 @@ import {
   TextInput,
   StyleSheet,
   KeyboardTypeOptions,
+  View,
 } from "react-native"
 import { Theme } from "@/constants/Theme"
 
@@ -29,24 +30,29 @@ export const FocusInput = ({
   ...props
 }: FocusInputProps) => {
   const [isFocused, setIsFocused] = useState(false)
-  const borderAnim = useRef(new Animated.Value(0)).current
+  const focusAnim = useRef(new Animated.Value(0)).current
 
   useEffect(() => {
-    Animated.timing(borderAnim, {
+    Animated.timing(focusAnim, {
       toValue: isFocused ? 1 : 0,
-      duration: 100,
+      duration: 160,
       useNativeDriver: false,
     }).start()
-  }, [isFocused, borderAnim])
+  }, [isFocused, focusAnim])
 
-  const borderColor = borderAnim.interpolate({
+  const borderColor = focusAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: ["transparent", Theme.colors.accent],
+    outputRange: [Theme.colors.borderSoft, Theme.colors.primarySoft],
   })
 
-  const borderWidth = borderAnim.interpolate({
-    inputRange: [0, 0],
-    outputRange: [1, 1],
+  const backgroundColor = focusAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [Theme.colors.surface, Theme.colors.surfaceHigh],
+  })
+
+  const shadowOpacity = focusAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, 0.35],
   })
 
   return (
@@ -55,39 +61,54 @@ export const FocusInput = ({
         styles.inputContainer,
         {
           borderColor,
-          borderWidth,
+          backgroundColor,
+          shadowColor: Theme.colors.primary,
+          shadowOpacity,
+          shadowRadius: 8,
+          shadowOffset: { width: 0, height: 0 },
+          elevation: 4,
         },
       ]}
     >
-      <TextInput
-        placeholder={placeholder}
-        placeholderTextColor={Theme.colors.darkGray}
-        keyboardType={type}
-        cursorColor={Theme.colors.accent}
-        onFocus={() => setIsFocused(true)}
-        onBlur={() => setIsFocused(false)}
-        onChangeText={onChange}
-        autoCapitalize={capitalize}
-        value={value}
-        editable={editable}
-        style={[styles.input, !editable && { color: Theme.colors.gray }]}
-        onSubmitEditing={onSubmitEditing}
-        {...props}
-      />
+      <View style={styles.inner}>
+        <TextInput
+          placeholder={placeholder}
+          placeholderTextColor={Theme.colors.darkGray}
+          keyboardType={type}
+          cursorColor={Theme.colors.primarySoft}
+          selectionColor={Theme.colors.primarySoft}
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => setIsFocused(false)}
+          onChangeText={onChange}
+          autoCapitalize={capitalize}
+          value={value}
+          editable={editable}
+          style={[styles.input, !editable && styles.disabled]}
+          onSubmitEditing={onSubmitEditing}
+          {...props}
+        />
+      </View>
     </Animated.View>
   )
 }
 
 const styles = StyleSheet.create({
   inputContainer: {
-    borderRadius: 12,
-    backgroundColor: Theme.colors.background2,
+    borderRadius: Theme.radii.lg,
+    borderWidth: 1,
+  },
+  inner: {
+    borderRadius: Theme.radii.lg,
+    overflow: "hidden",
   },
   input: {
-    paddingHorizontal: 12,
-    paddingVertical: 14,
+    paddingHorizontal: Theme.spacing.l,
+    paddingVertical: Theme.spacing.m,
     color: Theme.colors.text,
     fontFamily: Theme.fonts.onest,
     fontSize: Theme.sizes.h4,
+  },
+  disabled: {
+    color: Theme.colors.gray,
   },
 })

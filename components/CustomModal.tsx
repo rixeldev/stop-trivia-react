@@ -1,4 +1,5 @@
 import { Theme } from "@/constants/Theme"
+import { LinearGradient } from "expo-linear-gradient"
 import { useTranslation } from "react-i18next"
 import { Modal, Pressable, StyleSheet, Text, View } from "react-native"
 
@@ -22,56 +23,32 @@ export const CustomModal = ({
   return (
     <Modal
       animationType="fade"
-      transparent={false}
+      transparent
       visible={modalVisible}
       onRequestClose={onRequestClose}
-      backdropColor={Theme.colors.backdrop}
     >
-      <View style={styles.centeredView}>
+      <LinearGradient
+        colors={Theme.gradients.overlay}
+        style={styles.centeredView}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 1 }}
+      >
         <View style={styles.modalView}>
-          <View>
-            <Text
-              style={{
-                color: Theme.colors.accent,
-                fontFamily: Theme.fonts.onestBold,
-                fontSize: Theme.sizes.h3,
-              }}
-            >
-              {title}
-            </Text>
-          </View>
+          <View style={styles.accentBar} />
 
-          <View style={{ marginVertical: 12 }}>
-            <Text
-              style={{
-                fontFamily: Theme.fonts.onest,
-                color: Theme.colors.gray,
-              }}
-            >
-              {description}
-            </Text>
-          </View>
+          <Text style={styles.title}>{title}</Text>
 
-          <View
-            style={{ flexDirection: "row", gap: 12, alignSelf: "flex-end" }}
-          >
+          <Text style={styles.description}>{description}</Text>
+
+          <View style={styles.actions}>
             <Pressable
               onPress={onRequestClose}
               style={({ pressed }) => [
-                {
-                  backgroundColor: pressed
-                    ? Theme.colors.background2
-                    : Theme.colors.transparent,
-                },
-                styles.modalBottomButtons,
+                { opacity: pressed ? 0.7 : 1 },
+                styles.actionBtn,
               ]}
             >
-              <Text
-                style={{
-                  fontFamily: Theme.fonts.onest,
-                  color: Theme.colors.red,
-                }}
-              >
+              <Text style={[styles.actionText, { color: Theme.colors.red }]}>
                 {t("cancel")}
               </Text>
             </Pressable>
@@ -79,68 +56,86 @@ export const CustomModal = ({
             <Pressable
               onPress={onAccept}
               style={({ pressed }) => [
-                {
-                  backgroundColor: pressed
-                    ? Theme.colors.background2
-                    : Theme.colors.transparent,
-                },
-                styles.modalBottomButtons,
+                { opacity: pressed ? 0.75 : 1 },
+                styles.acceptBtn,
               ]}
             >
-              <Text
-                style={{
-                  fontFamily: Theme.fonts.onest,
-                  color: Theme.colors.accent,
-                }}
+              <LinearGradient
+                colors={Theme.gradients.primary}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.acceptGradient}
               >
-                {t("accept")}
-              </Text>
+                <Text style={[styles.actionText, { color: Theme.colors.text }]}>
+                  {t("accept")}
+                </Text>
+              </LinearGradient>
             </Pressable>
           </View>
         </View>
-      </View>
+      </LinearGradient>
     </Modal>
   )
 }
 
 const styles = StyleSheet.create({
-  columns: {
-    flex: 1,
-    flexDirection: "column",
-    gap: 18,
-  },
-  buttons: {
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 24,
-    alignSelf: "flex-start",
-  },
-  texts: {
-    color: Theme.colors.lightGray,
-    alignSelf: "flex-start",
-    fontFamily: Theme.fonts.onestBold,
-  },
-  modalView: {
-    margin: 20,
-    backgroundColor: Theme.colors.modal,
-    borderRadius: 20,
-    padding: 20,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
-  },
   centeredView: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+    padding: 20,
   },
-  modalBottomButtons: {
-    padding: 12,
-    borderRadius: 16,
+  modalView: {
+    width: "100%",
+    maxWidth: 380,
+    backgroundColor: Theme.colors.surface,
+    borderRadius: Theme.radii.xl,
+    padding: Theme.spacing.xl,
+    borderWidth: 1,
+    borderColor: Theme.colors.borderSoft,
+    ...Theme.shadows.lg,
+  },
+  accentBar: {
+    width: 42,
+    height: 4,
+    borderRadius: 2,
+    marginBottom: Theme.spacing.l,
+    backgroundColor: Theme.colors.primarySoft,
+    ...Theme.shadows.glow,
+  },
+  title: {
+    color: Theme.colors.text,
+    fontFamily: Theme.fonts.onestBold,
+    fontSize: Theme.sizes.h3,
+  },
+  description: {
+    fontFamily: Theme.fonts.onest,
+    color: Theme.colors.gray,
+    fontSize: Theme.sizes.h5,
+    lineHeight: 21,
+    marginTop: Theme.spacing.s,
+  },
+  actions: {
+    flexDirection: "row",
+    gap: Theme.spacing.m,
+    alignSelf: "flex-end",
+    marginTop: Theme.spacing.xl,
+  },
+  actionBtn: {
+    paddingVertical: Theme.spacing.m,
+    paddingHorizontal: Theme.spacing.l,
+    borderRadius: Theme.radii.m,
+  },
+  actionText: {
+    fontFamily: Theme.fonts.onestBold,
+    fontSize: Theme.sizes.h4,
+  },
+  acceptBtn: {
+    borderRadius: Theme.radii.m,
+    overflow: "hidden",
+  },
+  acceptGradient: {
+    paddingVertical: Theme.spacing.m,
+    paddingHorizontal: Theme.spacing.xl,
   },
 })

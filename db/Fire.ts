@@ -8,6 +8,7 @@ import {
   updateDoc,
   serverTimestamp,
   runTransaction,
+  collection,
 } from "@react-native-firebase/firestore"
 import {
   StopModel,
@@ -17,12 +18,21 @@ import {
 } from "@/interfaces/Game"
 import { StopPlayer, TTTPlayer } from "@/interfaces/Player"
 import { StopGameInputs } from "@/interfaces/StopGameInputs"
+import { FriendEntry, FriendProfile, FriendRequestEntry } from "@/interfaces/User"
 import {
   computeStopRoundPoints,
   computeStopRoundPointsWithReviews,
 } from "@/libs/scoring"
 
 const db = getFirestore()
+
+const toTime = (value: unknown): number | null => {
+  if (value && typeof value === "object" && "toDate" in value) {
+    const date = (value as { toDate: () => Date }).toDate()
+    if (typeof date.getTime === "function") return date.getTime()
+  }
+  return null
+}
 
 class Fire {
   state = {
@@ -257,6 +267,169 @@ class Fire {
 
     const latency = (t1 - t0) / 2
     return serverNow - (t1 - latency)
+  }
+
+  ensureProfile = async (user: {
+    uid: string
+    displayName?: string | null
+    photoURL?: string | null
+    email?: string | null
+  }): Promise<void> => {
+    if (!user?.uid) return
+    const ref = doc(db, "users", user.uid)
+    const data: Record<string, unknown> = {
+      uid: user.uid,
+      updatedAt: serverTimestamp(),
+    }
+    if (user.displayName) data.name = user.displayName
+    if (user.photoURL) data.photoURL = user.photoURL
+    if (user.email) data.email = user.email
+    await setDoc(ref, data, { merge: true })
+  }
+
+  getFriendProfile = async (uid: string): Promise<FriendProfile | null> => {
+    const ref = doc(db, "users", uid)
+    const snap = await getDoc(ref)
+    if (!snap.exists()) return null
+    const data = snap.data() ?? {}
+    return {
+      uid,
+      name: data.name ?? null,
+      photoURL: data.photoURL ?? null,
+      email: data.email ?? null,
+    }
+  }
+
+  onFriends = (uid: string, callback: (entries: FriendEntry[]) => void) => {
+    const ref = collection(db, "users", uid, "friends")
+    return onSnapshot(ref, (snapshot) => {
+      const entries: FriendEntry[] = snapshot.docs.map((docSnap: any) => {
+        const data = docSnap.data()
+        return {
+          id: docSnap.id,
+          name: data.name ?? null,
+          photoURL: data.photoURL ?? null,
+          addedAt: toTime(data.addedAt),
+        }
+      })
+      callback(entries)
+    })
+  }
+
+  onReceivedRequests = (
+    uid: string,
+    callback: (entries: FriendRequestEntry[]) => void
+  ) => {
+    const ref = collection(db, "users", uid, "receivedRequests")
+    return onSnapshot(ref, (snapshot) => {
+      const entries: FriendRequestEntry[] = snapshot.docs.map((docSnap: any) => {
+        const data = docSnap.data()
+        return {
+          id: docSnap.id,
+          name: data.fromName ?? null,
+          photoURL: data.fromPhotoURL ?? null,
+          sentAt: toTime(data.sentAt),
+        }
+      })
+      callback(entries)
+    })
+  }
+
+  onSentRequests = (
+    uid: string,
+    callback: (entries: FriendRequestEntry[]) => void
+  ) => {
+    const ref = collection(db, "users", uid, "sentRequests")
+    return onSnapshot(ref, (snapshot) => {
+      const entries: FriendRequestEntry[] = snapshot.docs.map((docSnap: any) => {
+        const data = docSnap.data()
+        return {
+          id: docSnap.id,
+          name: data.toName ?? null,
+          photoURL: data.toPhotoURL ?? null,
+          sentAt: toTime(data.sentAt),
+        }
+      })
+      callback(entries)
+    })
+  }
+
+  sendFriendRequest = async (
+    fromId: string,
+    fromName: string | null | undefined,
+    fromPhotoURL: string | null | undefined,
+    toId: string,
+    toName: string | null | undefined,
+    toPhotoURL: string | null | undefined
+  ): Promise<void> => {
+    if (!fromId || !toId || fromId === toId) return
+    const sentRef = doc(db, "users", fromId, "sentRequests", toId)
+    const receivedRef = doc(db, "users", toId, "receivedRequests", fromId)
+
+    await runTransaction(db, async (tx) => {
+      const [myFriend, theirFriend, sent, received] = await Promise.all([
+        tx.get(doc(db, "users", fromId, "friends", toId)),
+        tx.get(doc(db, "users", toId, "friends", fromId)),
+        tx.get(sentRef),
+        tx.get(receivedRef),
+      ])
+      if (myFriend.exists() || theirFriend.exists()) return
+      if (sent.exists() || received.exists()) return
+
+      tx.set(sentRef, {
+        toName: toName ?? "Unknown",
+        toPhotoURL: toPhotoURL ?? "",
+        sentAt: serverTimestamp(),
+      })
+      tx.set(receivedRef, {
+        fromName: fromName ?? "Unknown",
+        fromPhotoURL: fromPhotoURL ?? "",
+        sentAt: serverTimestamp(),
+      })
+    })
+  }
+
+  acceptFriendRequest = async (
+    myId: string,
+    myName: string | null | undefined,
+    myPhotoURL: string | null | undefined,
+    otherId: string,
+    otherName: string | null | undefined,
+    otherPhotoURL: string | null | undefined
+  ): Promise<void> => {
+    if (!myId || !otherId || myId === otherId) return
+    await runTransaction(db, async (tx) => {
+      tx.set(doc(db, "users", myId, "friends", otherId), {
+        name: otherName ?? "Unknown",
+        photoURL: otherPhotoURL ?? "",
+        addedAt: serverTimestamp(),
+      })
+      tx.set(doc(db, "users", otherId, "friends", myId), {
+        name: myName ?? "Unknown",
+        photoURL: myPhotoURL ?? "",
+        addedAt: serverTimestamp(),
+      })
+      tx.delete(doc(db, "users", myId, "receivedRequests", otherId))
+      tx.delete(doc(db, "users", otherId, "sentRequests", myId))
+    })
+  }
+
+  declineFriendRequest = async (myId: string, otherId: string): Promise<void> => {
+    if (!myId || !otherId) return
+    await deleteDoc(doc(db, "users", myId, "receivedRequests", otherId))
+    await deleteDoc(doc(db, "users", otherId, "sentRequests", myId))
+  }
+
+  cancelFriendRequest = async (myId: string, otherId: string): Promise<void> => {
+    if (!myId || !otherId) return
+    await deleteDoc(doc(db, "users", myId, "sentRequests", otherId))
+    await deleteDoc(doc(db, "users", otherId, "receivedRequests", myId))
+  }
+
+  removeFriend = async (myId: string, otherId: string): Promise<void> => {
+    if (!myId || !otherId || myId === otherId) return
+    await deleteDoc(doc(db, "users", myId, "friends", otherId))
+    await deleteDoc(doc(db, "users", otherId, "friends", myId))
   }
 }
 

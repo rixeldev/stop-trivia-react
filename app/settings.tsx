@@ -15,9 +15,10 @@ import {
   QuestionIcon,
   StarIcon,
   ForwardIcon,
+  UsersIcon,
 } from "@/components/ui/Icons"
 import { Theme } from "@/constants/Theme"
-import { Stack, useNavigation } from "expo-router"
+import { Stack, useNavigation, router } from "expo-router"
 import { useEffect, useRef, useState } from "react"
 import {
   Image,
@@ -386,6 +387,15 @@ export default function Settings() {
         </Text>
 
         <View style={styles.group}>
+          <Row
+            onPress={() => router.push("/friends")}
+            title={t("friends")}
+            description={t("friends_desc")}
+            icon={<UsersIcon size={20} color={Theme.colors.primarySoft} />}
+          />
+
+          <View style={styles.divider} />
+
           <Row
             onPress={handleShareApp}
             title={t("invite_friends")}

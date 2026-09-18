@@ -66,6 +66,18 @@ functions/        # Firebase Cloud Functions (Node 22, TypeScript)
 tests/e2e/        # Detox E2E tests (separate npm package)
 ```
 
+## Friends System
+
+- Profile/docs live under `users/{uid}`:
+  - `users/{uid}` — profile doc created/refreshed on app open via `Fire.ensureProfile` (name, photoURL, email). Used to resolve "add friend by ID".
+  - `users/{uid}/friends/{friendUid}` — accepted friendship `{ name, photoURL, addedAt }`.
+  - `users/{uid}/receivedRequests/{fromUid}` — incoming requests `{ fromName, fromPhotoURL, sentAt }`.
+  - `users/{uid}/sentRequests/{toUid}` — outgoing requests `{ toName, toPhotoURL, sentAt }`.
+- `db/Fire.ts` API: `ensureProfile`, `getFriendProfile`, `onFriends`/`onReceivedRequests`/`onSentRequests` (onSnapshot subscriptions), `sendFriendRequest`, `acceptFriendRequest`, `declineFriendRequest`, `cancelFriendRequest`, `removeFriend`. The first two and accept/remove run in `runTransaction`s; decline/cancel are direct `deleteDoc`s.
+- `hooks/useFriends(uid)` subscribes to all three subcollections and returns `{ friends, received, sent, friendsIds, receivedIds, sentIds, isFriend }` — shared by `app/friends.tsx` and `components/PlayerInfoSheet.tsx`.
+- UX: tapping another player in a stop room opens `PlayerInfoSheet` (BottomSheetModal) with that player's info and a contextual friend action (Add / Accept / Cancel / Remove); `app/friends.tsx` (reachable from Settings) lists friends and requests and supports adding by user ID.
+- All friend subcollection docs are keyed by Firebase UID; profile data from a game's `players[]` (id/name/photoURL) is embedded in requests so friend discovery from a room works even if the target has no `users/{uid}` doc yet.
+
 ## Firebase Cloud Functions
 
 - Source: `functions/` directory

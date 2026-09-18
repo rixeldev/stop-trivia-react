@@ -25,6 +25,7 @@ import {
 } from "@react-native-firebase/auth"
 import { Onboarding } from "@/components/Onboarding"
 import { parseBoolean } from "@/libs/parseBoolean"
+import Fire from "@/db/Fire"
 
 export default function Layout() {
   const [isAppReady, setIsAppReady] = useState(false)
@@ -41,6 +42,10 @@ export default function Layout() {
     setUser(user)
     if (initializing) setInitializing(false)
   }
+
+  useEffect(() => {
+    if (user) Fire.ensureProfile(user)
+  }, [user])
 
   useEffect(() => {
     setLoading(true)

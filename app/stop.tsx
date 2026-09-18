@@ -59,7 +59,7 @@ import { CustomModal } from "@/components/CustomModal"
 import Clipboard from "@react-native-clipboard/clipboard"
 import NetInfo from "@react-native-community/netinfo"
 import { StopPlayer } from "@/interfaces/Player"
-import { PlayerInputsInfoModal } from "@/components/PlayerInputsInfoModal"
+import { PlayerInfoSheet } from "@/components/PlayerInfoSheet"
 import {
   AdEventType,
   InterstitialAd,
@@ -99,8 +99,7 @@ export default function Stop() {
   const [isStarting, setIsStarting] = useState(false)
   const [connection, setConnection] = useState<boolean>(true)
   const [timerColor, setTimerColor] = useState(Theme.colors.gray)
-  const [inputsPlayer, setInputsPlayer] = useState<StopPlayer | null>(null)
-  const [inputsModalVisible, setInputsModalVisible] = useState(false)
+  const [selectedPlayer, setSelectedPlayer] = useState<StopPlayer | null>(null)
   const [loaded, setLoaded] = useState(false)
   const [idModalVisible, setIdModalVisible] = useState<boolean>(true)
   const [copied, setCopied] = useState<boolean>(false)
@@ -122,6 +121,7 @@ export default function Stop() {
 
   const scaleAnim = useRef(new Animated.Value(1)).current
   const sheetRef = useRef<BottomSheet>(null)
+  const playerSheetRef = useRef<BottomSheet>(null)
   const timerRef = useRef<NodeJS.Timeout | null>(null)
   const countdownStarted = useRef(false)
   const currentInputsRef = useRef(inputs)
@@ -701,8 +701,9 @@ export default function Stop() {
     if (gameData?.gameStatus === GameStatus.CREATED) return
     if (player.id === getAuth().currentUser?.uid) return
 
-    setInputsPlayer(player)
-    setInputsModalVisible(true)
+    sheetRef.current?.close()
+    setSelectedPlayer(player)
+    setTimeout(() => playerSheetRef.current?.expand(), 300)
   }
 
   if (!loaded && connection) {
@@ -857,10 +858,10 @@ export default function Stop() {
         onAccept={handleOnExit}
       />
 
-      <PlayerInputsInfoModal
-        modalVisible={inputsModalVisible}
-        onRequestClose={() => setInputsModalVisible(false)}
-        player={inputsPlayer}
+      <PlayerInfoSheet
+        sheetRef={playerSheetRef}
+        player={selectedPlayer}
+        myUid={getAuth().currentUser?.uid}
       />
 
       <Pressable style={{ flex: 1 }} onPress={() => Keyboard.dismiss()}>

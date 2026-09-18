@@ -1,6 +1,6 @@
 import "@/services/i18next"
 import React, { useEffect, useState } from "react"
-import { Image, Pressable, View } from "react-native"
+import { Image, Pressable, Text, View } from "react-native"
 import { Link, Stack } from "expo-router"
 import { SafeAreaProvider } from "react-native-safe-area-context"
 import { GestureHandlerRootView } from "react-native-gesture-handler"
@@ -26,6 +26,7 @@ import {
 import { Onboarding } from "@/components/Onboarding"
 import { parseBoolean } from "@/libs/parseBoolean"
 import Fire from "@/db/Fire"
+import { useFriends } from "@/hooks/useFriends"
 
 export default function Layout() {
   const [isAppReady, setIsAppReady] = useState(false)
@@ -34,6 +35,8 @@ export default function Layout() {
   const [user, setUser] = useState<FirebaseAuthTypes.User | null>(null)
   const [loading, setLoading] = useState<boolean>(true)
   const [firstTime, setFirstTime] = useState<boolean | null>(null)
+
+  const { received } = useFriends(user?.uid)
 
   const { i18n } = useTranslation()
   const { getItem, setItem } = useStorage()
@@ -184,6 +187,7 @@ export default function Layout() {
                     <Pressable
                       style={({ pressed }) => [
                         {
+                          position: "relative",
                           width: 40,
                           height: 40,
                           borderRadius: 12,
@@ -200,6 +204,37 @@ export default function Layout() {
                         color={Theme.colors.primarySoft}
                         size={22}
                       />
+                      {received.length > 0 && (
+                        <View
+                          pointerEvents="none"
+                          style={{
+                            position: "absolute",
+                            top: -3,
+                            right: -3,
+                            minWidth: 18,
+                            height: 18,
+                            borderRadius: 9,
+                            paddingHorizontal: 4,
+                            backgroundColor: Theme.colors.red,
+                            borderWidth: 1,
+                            borderColor: Theme.colors.background,
+                            alignItems: "center",
+                            justifyContent: "center",
+                          }}
+                        >
+                          <Text
+                            style={{
+                              color: Theme.colors.text,
+                              fontFamily: Theme.fonts.onestBold,
+                              fontSize: 10,
+                            }}
+                          >
+                            {received.length > 99
+                              ? "99+"
+                              : received.length}
+                          </Text>
+                        </View>
+                      )}
                     </Pressable>
                   </Link>
                 ),

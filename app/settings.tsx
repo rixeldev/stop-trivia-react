@@ -153,7 +153,8 @@ export default function Settings() {
     if (name === "") return setUsernameError(t("error_login_username_empty"))
     if (name.length < 3) return setUsernameError(t("error_login_username_min"))
     if (name.length > 10) return setUsernameError(t("error_login_username_max"))
-    if (name.includes(" ")) return setUsernameError(t("error_login_username_spaces"))
+    if (name.includes(" "))
+      return setUsernameError(t("error_login_username_spaces"))
 
     const uid = auth.currentUser?.uid
     if (!uid) return
@@ -414,7 +415,7 @@ export default function Settings() {
               }}
               thumbColor={
                 isVibrationEnabled
-                  ? Theme.colors.primarySoft
+                  ? Theme.colors.yellow
                   : Theme.colors.lightGray
               }
               ios_backgroundColor="#3e3e3e"
@@ -750,7 +751,7 @@ const styles = StyleSheet.create({
     gap: Theme.spacing.s,
   },
   name: {
-    color: Theme.colors.text,
+    color: Theme.colors.yellow,
     fontFamily: Theme.fonts.onestBold,
     fontSize: Theme.sizes.h0,
     textAlign: "center",
@@ -842,7 +843,7 @@ const styles = StyleSheet.create({
     paddingVertical: Theme.spacing.xs,
   },
   valuePillText: {
-    color: Theme.colors.primarySoft,
+    color: Theme.colors.yellow,
     fontFamily: Theme.fonts.onestBold,
     fontSize: Theme.sizes.h6,
     letterSpacing: 1,

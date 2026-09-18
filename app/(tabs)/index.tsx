@@ -19,6 +19,8 @@ import {
   HashIcon,
   LinkIcon,
   UsersIcon,
+  AddIcon,
+  RemoveIcon,
 } from "@/components/ui/Icons"
 import { useFocusEffect, useRouter } from "expo-router"
 import { useStorage } from "@/hooks/useStorage"
@@ -45,6 +47,10 @@ const timeOptions = [
   { value: 300, label: "5" },
 ]
 
+const MIN_ROUNDS = 1
+const MAX_ROUNDS = 20
+const DEFAULT_ROUNDS = 10
+
 export default function Index() {
   const [vibrationEnabled, setVibrationEnabled] = useState(true)
   const [id, setId] = useState("")
@@ -53,6 +59,7 @@ export default function Index() {
   const [modalVisible, setModalVisible] = useState(false)
   const [onlineLoading, setOnlineLoading] = useState(false)
   const [connection, setConnection] = useState(true)
+  const [rounds, setRounds] = useState(DEFAULT_ROUNDS)
 
   const { navigate } = useRouter()
   const { getItem } = useStorage()
@@ -179,6 +186,14 @@ export default function Index() {
               return
             }
 
+            if (gameGot.finished) {
+              vibrationEnabled && Vibration.vibrate(100)
+              setError(t("error_game_closed"))
+              setLoading(false)
+              sheetRef.current?.close()
+              return
+            }
+
             setLoading(false)
             setError(null)
             setId("")
@@ -265,7 +280,12 @@ export default function Index() {
     }
   }
 
-  const handleCreateStopGame = (mode: string, id: string, time: number) => {
+  const handleCreateStopGame = (
+    mode: string,
+    id: string,
+    time: number,
+    totalRounds: number,
+  ) => {
     vibrationEnabled && Vibration.vibrate(10)
 
     setLoading(false)
@@ -275,7 +295,7 @@ export default function Index() {
     setModalVisible(false)
     navigate({
       pathname: "stop",
-      params: { mode, id, time },
+      params: { mode, id, time, rounds: totalRounds },
     })
   }
 
@@ -328,7 +348,7 @@ export default function Index() {
                     <Pressable
                       key={option.value}
                       onPress={() =>
-                        handleCreateStopGame("online", id, option.value)
+                        handleCreateStopGame("online", id, option.value, rounds)
                       }
                       style={({ pressed }) => [
                         { opacity: pressed ? 0.8 : 1 },
@@ -339,6 +359,41 @@ export default function Index() {
                       <Text style={styles.timeUnit}>min</Text>
                     </Pressable>
                   ))}
+                </View>
+
+                <View style={styles.roundsDivider} />
+
+                <Text style={styles.roundsLabel}>{t("rounds")}</Text>
+
+                <View style={styles.roundsRow}>
+                  <Pressable
+                    onPress={() =>
+                      setRounds((current) => Math.max(MIN_ROUNDS, current - 1))
+                    }
+                    style={({ pressed }) => [
+                      { opacity: pressed ? 0.7 : 1 },
+                      styles.roundStepBtn,
+                    ]}
+                  >
+                    <RemoveIcon size={22} color={Theme.colors.primarySoft} />
+                  </Pressable>
+
+                  <View style={styles.roundValueChip}>
+                    <Text style={styles.roundValue}>{rounds}</Text>
+                    <Text style={styles.roundUnit}>{t("rounds")}</Text>
+                  </View>
+
+                  <Pressable
+                    onPress={() =>
+                      setRounds((current) => Math.min(MAX_ROUNDS, current + 1))
+                    }
+                    style={({ pressed }) => [
+                      { opacity: pressed ? 0.7 : 1 },
+                      styles.roundStepBtn,
+                    ]}
+                  >
+                    <AddIcon size={22} color={Theme.colors.primarySoft} />
+                  </Pressable>
                 </View>
               </View>
             </TouchableWithoutFeedback>
@@ -421,7 +476,7 @@ export default function Index() {
               rightIcon={
                 loading ? (
                   <ActivityIndicator
-                    color={Theme.colors.primarySoft}
+                    color={Theme.colors.yellow}
                     style={{ width: 26, height: 26 }}
                   />
                 ) : undefined
@@ -542,7 +597,7 @@ const JoinRow = ({
           justifyContent: "center",
         }}
       >
-        <ForwardIcon size={18} color={Theme.colors.primarySoft} />
+        <ForwardIcon size={18} color={Theme.colors.yellow} />
       </View>
     </Pressable>
   )
@@ -569,7 +624,7 @@ const styles = StyleSheet.create({
     marginTop: Theme.spacing.m,
   },
   heroTitle: {
-    color: Theme.colors.text,
+    color: Theme.colors.yellow,
     fontSize: Theme.sizes.h0,
     fontFamily: Theme.fonts.onestBold,
     marginTop: Theme.spacing.m,
@@ -651,6 +706,60 @@ const styles = StyleSheet.create({
     fontSize: Theme.sizes.h3,
   },
   timeUnit: {
+    color: Theme.colors.primarySoft,
+    fontFamily: Theme.fonts.onest,
+    fontSize: Theme.sizes.h6,
+    marginTop: 2,
+  },
+  roundsDivider: {
+    height: 1,
+    backgroundColor: Theme.colors.borderSoft,
+    marginVertical: Theme.spacing.l,
+    opacity: 0.6,
+  },
+  roundsLabel: {
+    color: Theme.colors.gray,
+    fontFamily: Theme.fonts.onest,
+    fontSize: Theme.sizes.h6,
+    textTransform: "uppercase",
+    letterSpacing: 1.2,
+    textAlign: "center",
+    marginBottom: Theme.spacing.m,
+  },
+  roundsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: Theme.spacing.l,
+  },
+  roundStepBtn: {
+    width: 48,
+    height: 48,
+    borderRadius: Theme.radii.m,
+    backgroundColor: Theme.colors.surfaceHigh,
+    borderWidth: 1,
+    borderColor: Theme.colors.borderSoft,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  roundValueChip: {
+    minWidth: 96,
+    paddingVertical: Theme.spacing.m,
+    paddingHorizontal: Theme.spacing.l,
+    borderRadius: Theme.radii.lg,
+    backgroundColor: Theme.colors.surface,
+    borderWidth: 1,
+    borderColor: Theme.colors.primarySoft,
+    alignItems: "center",
+    ...Theme.shadows.glow,
+  },
+  roundValue: {
+    color: Theme.colors.text,
+    fontFamily: Theme.fonts.onestBold,
+    fontSize: Theme.sizes.h2,
+    fontVariant: ["tabular-nums"],
+  },
+  roundUnit: {
     color: Theme.colors.primarySoft,
     fontFamily: Theme.fonts.onest,
     fontSize: Theme.sizes.h6,

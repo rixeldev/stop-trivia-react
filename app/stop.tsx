@@ -68,6 +68,7 @@ import {
 import { Loading } from "@/components/Loading"
 import { LinearGradient } from "expo-linear-gradient"
 import { adInterstitialId } from "@/db/firebaseConfig"
+import { WinnerModal } from "@/components/WinnerModal"
 
 const adUnitId = __DEV__ ? TestIds.INTERSTITIAL : adInterstitialId
 
@@ -106,6 +107,7 @@ export default function Stop() {
   const [myChoice, setMyChoice] = useState<boolean | null>(null)
   const [myReviewSubmitted, setMyReviewSubmitted] =
     useState<boolean>(false)
+  const [winner, setWinner] = useState<StopPlayer | null>(null)
   const [inputs, setInputs] = useState({
     name: "",
     lastName: "",
@@ -128,14 +130,16 @@ export default function Stop() {
   const backHandlerRef = useRef<NativeEventSubscription | null>(null)
   const playersCount = useRef<number>(1)
   const vibrationEnabled = useRef<boolean>(undefined)
+  const gameFinishedRef = useRef(false)
 
   const navigation = useNavigation()
   const { getItem } = useStorage()
   const { t } = useTranslation()
-  const { mode, id, time } = useLocalSearchParams<{
+  const { mode, id, time, rounds } = useLocalSearchParams<{
     mode: string
     id: string
     time: string
+    rounds?: string
   }>()
 
   const interstitial = InterstitialAd.createForAdRequest(adUnitId, {
@@ -182,6 +186,9 @@ export default function Stop() {
   useEffect(() => {
     let gameId = id
     let gameTime = +time
+    const roundsValue = rounds ? +rounds : null
+    const maxRounds =
+      roundsValue && roundsValue >= 1 && roundsValue <= 20 ? roundsValue : null
     let unsubscribe: (() => void) | undefined
     let connectionUnsubscribe: (() => void) | undefined
     let currentGameData: StopModel
@@ -244,6 +251,7 @@ export default function Stop() {
         host: getAuth().currentUser?.uid || "no-host",
         startTime: 0,
         timestamp: Date.now(),
+        maxRounds: maxRounds,
       })
     }
 
@@ -334,7 +342,7 @@ export default function Stop() {
 
       if (timerRef.current) clearInterval(timerRef.current)
 
-      if (mode === "online" && gameId) {
+      if (mode === "online" && gameId && !gameFinishedRef.current) {
         Fire.deleteGame("stop", gameId)
       }
 
@@ -394,6 +402,29 @@ export default function Stop() {
     }
   }, [gameData, mode, myChoice])
 
+  useEffect(() => {
+    if (mode === "offline") return
+    if (!gameData) return
+    const maxRoundsValue = gameData.maxRounds
+    if (!maxRoundsValue || maxRoundsValue <= 0) return
+    if (gameData.gameStatus !== GameStatus.STOPPED) return
+    if (gameData.round < maxRoundsValue) return
+
+    const playerCount = gameData.players?.length ?? 0
+    const isLegacyScored =
+      playerCount <= 1 && gameData.scoredRound === gameData.round
+    const isReviewScored =
+      playerCount > 1 && gameData.reviewedRound === gameData.round
+    if (!isLegacyScored && !isReviewScored) return
+
+    const ordered = [...gameData.players].sort(
+      (a, b) => (b.points ?? 0) - (a.points ?? 0),
+    )
+    gameFinishedRef.current = true
+    Fire.updateGame("stop", gameData.gameId, { finished: true })
+    setWinner(ordered[0] ?? null)
+  }, [gameData, mode])
+
   const setTitleByGameStatus = (gameStatus: number | undefined) => {
     switch (gameStatus) {
       case GameStatus.CREATED:
@@ -417,6 +448,21 @@ export default function Stop() {
     if (flag === "play") {
       if (!gameData) return
       if (gameData.host === userId) {
+        const maxRoundsValue = gameData.maxRounds
+        if (
+          maxRoundsValue &&
+          maxRoundsValue > 0 &&
+          gameData.round >= maxRoundsValue
+        ) {
+          const ordered = [...gameData.players].sort(
+            (a, b) => (b.points ?? 0) - (a.points ?? 0),
+          )
+          gameFinishedRef.current = true
+          Fire.updateGame("stop", gameData.gameId, { finished: true })
+          setWinner(ordered[0] ?? null)
+          return
+        }
+
         if (gameData.players.length < 2) {
           vibrationEnabled.current && Vibration.vibrate(100)
           ToastAndroid.showWithGravity(
@@ -604,6 +650,11 @@ export default function Stop() {
   const handleBackPress = (data?: StopModel | null): boolean => {
     const currentData = data ?? gameData
 
+    if (gameFinishedRef.current) {
+      handleWinnerClose()
+      return true
+    }
+
     if (mode === "offline") handleOnExit()
     if (!currentData) return true
     if (currentData.gameStatus === GameStatus.IN_PROGRESS) {
@@ -667,6 +718,17 @@ export default function Stop() {
     }
 
     navigation.goBack()
+  }
+
+  const handleWinnerClose = () => {
+    gameFinishedRef.current = true
+    const myUid = getAuth().currentUser?.uid
+    if (mode !== "offline" && gameData?.gameId && myUid) {
+      Fire.updateGame("stop", gameData.gameId, { finished: true })
+      Fire.removePlayerFromGame("stop", gameData.gameId, myUid)
+    }
+    setWinner(null)
+    handleOnExit()
   }
 
   const handlePlayers = () => {
@@ -864,6 +926,8 @@ export default function Stop() {
         myUid={getAuth().currentUser?.uid}
       />
 
+      <WinnerModal winner={winner} onClose={handleWinnerClose} />
+
       <Pressable style={{ flex: 1 }} onPress={() => Keyboard.dismiss()}>
         <ScrollView
           contentContainerStyle={{ flexGrow: 1 }}
@@ -993,7 +1057,11 @@ export default function Stop() {
               {mode !== "offline" && (
                 <StatChip
                   label={t("round")}
-                  value={`${gameData?.round === 0 ? 1 : (gameData?.round ?? 0)}`}
+                  value={
+                    gameData?.maxRounds
+                      ? `${gameData?.round === 0 ? 1 : (gameData?.round ?? 0)}/${gameData.maxRounds}`
+                      : `${gameData?.round === 0 ? 1 : (gameData?.round ?? 0)}`
+                  }
                 />
               )}
               <StatChip label={t("your_points")} value={`${displayedPoints}`} />

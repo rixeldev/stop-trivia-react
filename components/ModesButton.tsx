@@ -162,7 +162,7 @@ export const ModesButton = ({
                   { backgroundColor: Theme.colors.primary2 },
                 ]}
               >
-                <ForwardIcon size={22} color={Theme.colors.primarySoft} />
+                <ForwardIcon size={22} color={Theme.colors.yellow} />
               </View>
             )}
           </View>

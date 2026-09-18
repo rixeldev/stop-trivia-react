@@ -234,3 +234,20 @@ export const ListIcon = (props: any) => (
 export const SoundIcon = (props: any) => (
   <AntDesign name="sound" size={24} color={Theme.colors.text} {...props} />
 )
+
+export const AddIcon = (props: any) => (
+  <MaterialIcons name="add" size={24} color={Theme.colors.text} {...props} />
+)
+
+export const RemoveIcon = (props: any) => (
+  <MaterialIcons name="remove" size={24} color={Theme.colors.text} {...props} />
+)
+
+export const TrophyIcon = (props: any) => (
+  <MaterialCommunityIcons
+    name="trophy"
+    size={24}
+    color={Theme.colors.text}
+    {...props}
+  />
+)

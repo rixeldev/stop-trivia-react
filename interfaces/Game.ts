@@ -16,6 +16,8 @@ export interface StopModel {
   scoredRound?: number | null
   reviews?: Record<string, StopReviewSubmission> | null
   reviewedRound?: number | null
+  maxRounds?: number | null
+  finished?: boolean
 }
 
 export interface WordReview {

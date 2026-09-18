@@ -154,6 +154,21 @@ class Fire {
     await deleteDoc(docRef)
   }
 
+  removePlayerFromGame = async (
+    collectionName: string,
+    gameId: string,
+    userId: string
+  ) => {
+    const gameRef = doc(db, collectionName, gameId)
+    await runTransaction(db, async (tx) => {
+      const snap = await tx.get(gameRef)
+      if (!snap.exists()) return
+      const data = snap.data() as StopModel
+      const players = (data.players ?? []).filter((p) => p.id !== userId)
+      tx.update(gameRef, { players })
+    })
+  }
+
   submitChoice = async (
     gameId: string,
     userId: string,

@@ -13,7 +13,7 @@ export const Theme = {
     accent: "#008080",
     red: "#FF5555",
     green: "#4CFF4C",
-    yellow: "#FFFF4C",
+    yellow: "#ffe989",
     gray: "#A9A9A9",
     lightGray: "#D3D3D3",
     darkGray: "#5A6B6A",

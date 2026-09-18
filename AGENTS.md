@@ -82,6 +82,20 @@ tests/e2e/        # Detox E2E tests (separate npm package)
 - Android: minSdkVersion 24, compileSdk 36, edge-to-edge enabled
 - New Architecture enabled (`newArchEnabled: true`)
 
+## Stop Game Scoring Rules
+
+- Max 4 players. Points per round:
+  - "Different words" → **100** each.
+  - "Same words" players split 100: 1 player → 100, 2 → 50, 3 (in a 4-player game) → 35, 4 → 25, otherwise `Math.round(100 / sameCount)`; no same words ("stop") → everyone gets 100.
+- All scoring math lives in `libs/scoring.ts` (`SCORE_DIFFERENT_WORDS`, `pointsForSameWords`, `computeStopRoundPoints`, `pointsForOffline`). It is shared by `db/Fire.ts` and `app/stop.tsx` — reuse it, never duplicate point math.
+- Online scoring flow:
+  - Each player writes their own choice to `scoring.<uid>` (boolean) via `Fire.submitChoice` using a dot-path `updateDoc`.
+  - Any client may run `Fire.scoreRound` when all players have submitted — a Firestore `runTransaction` guarded by `scoredRound === round` (idempotent, safe to run from all clients). It computes every player's points with `computeStopRoundPoints`, accumulates onto `players[].points`, sets `scoredRound` to the current round, and resets `scoring: {}`.
+  - Call `Fire.clearScoring` when a new round starts.
+- Schema evolution: new `StopModel` fields must be **optional/nullable** (e.g. `scoring`, `scoredRound`) so existing Firestore docs don't break.
+- Offline mode: choice buttons stay visible; award `pointsForOffline(sameWords)` into local `points` state.
+- Online displayed points come from the authoritative `gameData.players[].points` (via uid lookup), never from local state.
+
 ## Gotchas
 
 - The `functions/` directory uses **npm** (has `package-lock.json`), while the root uses **pnpm**. Don't mix them.

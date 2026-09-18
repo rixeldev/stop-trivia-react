@@ -2,6 +2,7 @@ import {
   getFirestore,
   doc,
   getDoc,
+  getDocs,
   deleteDoc,
   setDoc,
   onSnapshot,
@@ -9,6 +10,8 @@ import {
   serverTimestamp,
   runTransaction,
   collection,
+  query,
+  where,
 } from "@react-native-firebase/firestore"
 import {
   StopModel,
@@ -298,6 +301,29 @@ class Fire {
     if (user.photoURL) data.photoURL = user.photoURL
     if (user.email) data.email = user.email
     await setDoc(ref, data, { merge: true })
+  }
+
+  updateUsername = async (
+    uid: string,
+    newName: string
+  ): Promise<"changed" | "taken" | "error"> => {
+    if (!uid) return "error"
+    const trimmed = newName.trim()
+    if (!trimmed) return "error"
+    try {
+      const q = query(collection(db, "users"), where("name", "==", trimmed))
+      const snap = await getDocs(q)
+      const taken = snap.docs.some((docSnap: any) => docSnap.id !== uid)
+      if (taken) return "taken"
+      await updateDoc(doc(db, "users", uid), {
+        name: trimmed,
+        updatedAt: serverTimestamp(),
+      })
+      return "changed"
+    } catch (error) {
+      console.log(error)
+      return "error"
+    }
   }
 
   onProfileSaved = (uid: string, callback: (saved: boolean) => void) => {

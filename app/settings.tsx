@@ -28,6 +28,7 @@ import {
   StyleSheet,
   Switch,
   Text,
+  TextInput,
   ToastAndroid,
   Vibration,
   View,
@@ -36,6 +37,8 @@ import {
 import { useStorage } from "@/hooks/useStorage"
 import { parseBoolean } from "@/libs/parseBoolean"
 import { BottomSheetModal } from "@/components/BottomSheetModal"
+import { PrimaryButton } from "@/components/ui/PrimaryButton"
+import Fire from "@/db/Fire"
 import BottomSheet from "@gorhom/bottom-sheet"
 import Clipboard from "@react-native-clipboard/clipboard"
 import { signOut, updateProfile } from "@react-native-firebase/auth"
@@ -84,8 +87,13 @@ export default function Settings() {
   const languageLabel = languageSelected === "es" ? t("es") : t("en")
 
   const sheetRef = useRef<BottomSheet>(null)
+  const editUsernameSheetRef = useRef<BottomSheet>(null)
   const navigation = useNavigation()
   const insets = useSafeAreaInsets()
+
+  const [usernameInput, setUsernameInput] = useState("")
+  const [usernameError, setUsernameError] = useState("")
+  const [savingUsername, setSavingUsername] = useState(false)
 
   useEffect(() => {
     const loadSettings = async () => {
@@ -132,6 +140,47 @@ export default function Settings() {
       ToastAndroid.SHORT,
       ToastAndroid.CENTER,
     )
+  }
+
+  const openEditUsername = () => {
+    setUsernameInput(userName ?? "")
+    setUsernameError("")
+    editUsernameSheetRef.current?.expand()
+  }
+
+  const handleSaveUsername = async () => {
+    const name = usernameInput.trim()
+    if (name === "") return setUsernameError(t("error_login_username_empty"))
+    if (name.length < 3) return setUsernameError(t("error_login_username_min"))
+    if (name.length > 10) return setUsernameError(t("error_login_username_max"))
+    if (name.includes(" ")) return setUsernameError(t("error_login_username_spaces"))
+
+    const uid = auth.currentUser?.uid
+    if (!uid) return
+
+    setSavingUsername(true)
+    try {
+      const result = await Fire.updateUsername(uid, name)
+      if (result === "taken") {
+        setUsernameError(t("username_taken"))
+        return
+      }
+      if (result === "error") {
+        setUsernameError(t("username_update_error"))
+        return
+      }
+      await updateProfile(auth.currentUser!, { displayName: name })
+      setUserName(name)
+      setUsernameError("")
+      editUsernameSheetRef.current?.close()
+      ToastAndroid.showWithGravity(
+        t("username_updated"),
+        ToastAndroid.SHORT,
+        ToastAndroid.CENTER,
+      )
+    } finally {
+      setSavingUsername(false)
+    }
   }
 
   const handleSignOut = () => {
@@ -310,7 +359,16 @@ export default function Settings() {
               </Pressable>
             </View>
 
-            <Text style={styles.name}>{userName ?? "Stop Test"}</Text>
+            <Pressable
+              onPress={openEditUsername}
+              style={({ pressed }) => [
+                styles.nameRow,
+                { opacity: pressed ? 0.7 : 1 },
+              ]}
+            >
+              <Text style={styles.name}>{userName ?? "Stop Test"}</Text>
+              <EditIcon size={16} color={Theme.colors.darkGray} />
+            </Pressable>
             <Text style={styles.email}>{userEmail}</Text>
 
             <Pressable
@@ -547,6 +605,43 @@ export default function Settings() {
           })}
         </View>
       </BottomSheetModal>
+
+      <BottomSheetModal
+        title={t("change_username")}
+        ref={editUsernameSheetRef}
+        icon={<UserIcon size={20} color={Theme.colors.primarySoft} />}
+      >
+        <View style={styles.editUsernameWrap}>
+          <Text style={styles.editHint}>{t("change_username_desc")}</Text>
+
+          <View style={styles.editInputWrap}>
+            <TextInput
+              style={styles.editInput}
+              value={usernameInput}
+              onChangeText={(text) => {
+                setUsernameInput(text)
+                setUsernameError("")
+              }}
+              placeholder={t("username")}
+              placeholderTextColor={Theme.colors.gray}
+              autoCapitalize="none"
+              autoCorrect={false}
+              maxLength={10}
+            />
+          </View>
+
+          {usernameError ? (
+            <Text style={styles.editError}>{usernameError}</Text>
+          ) : null}
+
+          <PrimaryButton
+            title={t("save")}
+            onPress={handleSaveUsername}
+            loading={savingUsername}
+            block
+          />
+        </View>
+      </BottomSheetModal>
     </Screen>
   )
 }
@@ -648,6 +743,11 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: Theme.colors.surface,
     ...Theme.shadows.sm,
+  },
+  nameRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Theme.spacing.s,
   },
   name: {
     color: Theme.colors.text,
@@ -832,5 +932,36 @@ const styles = StyleSheet.create({
     fontSize: Theme.sizes.h6,
     color: Theme.colors.gray,
     fontFamily: Theme.fonts.onest,
+  },
+  editUsernameWrap: {
+    gap: Theme.spacing.m,
+    paddingBottom: Theme.spacing.l,
+  },
+  editHint: {
+    color: Theme.colors.gray,
+    fontFamily: Theme.fonts.onest,
+    fontSize: Theme.sizes.h5,
+    lineHeight: 20,
+  },
+  editInputWrap: {
+    backgroundColor: Theme.colors.surfaceHigh,
+    borderWidth: 1,
+    borderColor: Theme.colors.borderSoft,
+    borderRadius: Theme.radii.lg,
+    paddingHorizontal: Theme.spacing.m,
+    height: 48,
+    justifyContent: "center",
+  },
+  editInput: {
+    color: Theme.colors.text,
+    fontFamily: Theme.fonts.onest,
+    fontSize: Theme.sizes.h4,
+    padding: 0,
+  },
+  editError: {
+    color: Theme.colors.red,
+    fontFamily: Theme.fonts.onest,
+    fontSize: Theme.sizes.h5,
+    lineHeight: 20,
   },
 })

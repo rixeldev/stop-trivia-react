@@ -68,7 +68,12 @@ export const GameInviteModal = ({
           </LinearGradient>
 
           <Text style={styles.description}>
-            {t("game_invite_desc", { name: invite?.hostName ?? "" })}
+            {t(
+              invite?.gameType === "ttt"
+                ? "game_invite_desc_ttt"
+                : "game_invite_desc",
+              { name: invite?.hostName ?? "" },
+            )}
           </Text>
 
           <View style={styles.actions}>

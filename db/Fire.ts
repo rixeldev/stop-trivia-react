@@ -19,6 +19,7 @@ import {
   TTTModel,
   StopReviewSubmission,
   GameInviteEntry,
+  GameType,
 } from "@/interfaces/Game"
 import { StopPlayer, TTTPlayer } from "@/interfaces/Player"
 import { StopGameInputs } from "@/interfaces/StopGameInputs"
@@ -420,6 +421,7 @@ class Fire {
           currentTime: data.currentTime ?? null,
           maxRounds: data.maxRounds ?? null,
           sentAt: toTime(data.sentAt),
+          gameType: data.gameType === "ttt" ? "ttt" : "stop",
         }
       })
       callback(entries)
@@ -435,10 +437,12 @@ class Fire {
     toName: string | null | undefined,
     toPhotoURL: string | null | undefined,
     currentTime?: number | null,
-    maxRounds?: number | null
+    maxRounds?: number | null,
+    gameType: GameType = "stop"
   ): Promise<"ok" | "full" | "started" | "error"> => {
     if (!gameId || !fromId || !toId || fromId === toId) return "error"
-    const gameRef = doc(db, "stop", gameId)
+    const limit = gameType === "ttt" ? 2 : 4
+    const gameRef = doc(db, gameType, gameId)
     const inviteRef = doc(db, "users", toId, "gameInvites", gameId)
     let result: "ok" | "full" | "started" | "error" = "error"
 
@@ -451,13 +455,14 @@ class Fire {
           result = "started"
           return
         }
-        if ((data.players ?? []).length >= 4) {
+        if ((data.players ?? []).length >= limit) {
           result = "full"
           return
         }
         if ((data.players ?? []).some((p) => p.id === toId)) return
 
         tx.set(inviteRef, {
+          gameType,
           hostUid: fromId,
           hostName: fromName ?? "Unknown",
           hostPhotoURL: fromPhotoURL ?? "",
@@ -486,10 +491,12 @@ class Fire {
     uid: string,
     name: string | null | undefined,
     photoURL: string | null | undefined,
-    gameId: string
+    gameId: string,
+    gameType: GameType = "stop"
   ): Promise<"ok" | "full" | "started" | "closed" | "error"> => {
     if (!uid || !gameId) return "error"
-    const gameRef = doc(db, "stop", gameId)
+    const limit = gameType === "ttt" ? 2 : 4
+    const gameRef = doc(db, gameType, gameId)
     const inviteRef = doc(db, "users", uid, "gameInvites", gameId)
     let result: "ok" | "full" | "started" | "closed" | "error" = "error"
 
@@ -518,25 +525,43 @@ class Fire {
           return
         }
 
-        if ((data.players ?? []).length >= 4) {
+        if ((data.players ?? []).length >= limit) {
           tx.delete(inviteRef)
           tx.update(gameRef, { [`invites.${uid}.status`]: "declined" })
           result = "full"
           return
         }
 
-        tx.update(gameRef, {
-          players: [
-            ...(data.players ?? []),
-            {
-              id: uid,
-              name: name ?? "Unknown",
-              points: 0,
-              photoURL: photoURL ?? "",
-            },
-          ],
-          [`invites.${uid}.status`]: "joined",
-        })
+        if (gameType === "ttt") {
+          const tttPlayers = (data as unknown as TTTModel).players
+          const hostPos = tttPlayers.find((p) => p.id === data.host)?.pos
+          tx.update(gameRef, {
+            players: [
+              ...tttPlayers,
+              {
+                id: uid,
+                name: name ?? "Unknown",
+                pos: hostPos === "X" ? "O" : "X",
+                wins: 0,
+                photoURL: photoURL ?? "",
+              },
+            ],
+            [`invites.${uid}.status`]: "joined",
+          })
+        } else {
+          tx.update(gameRef, {
+            players: [
+              ...(data.players ?? []),
+              {
+                id: uid,
+                name: name ?? "Unknown",
+                points: 0,
+                photoURL: photoURL ?? "",
+              },
+            ],
+            [`invites.${uid}.status`]: "joined",
+          })
+        }
         tx.delete(inviteRef)
         result = "ok"
       })
@@ -547,7 +572,11 @@ class Fire {
     }
   }
 
-  declineGameInvite = async (uid: string, gameId: string): Promise<void> => {
+  declineGameInvite = async (
+    uid: string,
+    gameId: string,
+    gameType: GameType = "stop"
+  ): Promise<void> => {
     if (!uid || !gameId) return
     try {
       await deleteDoc(doc(db, "users", uid, "gameInvites", gameId))
@@ -555,7 +584,7 @@ class Fire {
       /* ignore */
     }
     try {
-      await updateDoc(doc(db, "stop", gameId), {
+      await updateDoc(doc(db, gameType, gameId), {
         [`invites.${uid}.status`]: "declined",
       })
     } catch {

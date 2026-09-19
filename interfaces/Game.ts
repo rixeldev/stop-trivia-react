@@ -7,6 +7,8 @@ export interface StopInvite {
   status: "pending" | "declined" | "joined"
 }
 
+export type GameType = "stop" | "ttt"
+
 export interface GameInviteEntry {
   gameId: string
   hostUid: string
@@ -15,6 +17,7 @@ export interface GameInviteEntry {
   currentTime?: number | null
   maxRounds?: number | null
   sentAt?: number | null
+  gameType?: GameType | null
 }
 
 export interface StopModel {
@@ -58,6 +61,7 @@ export interface TTTModel {
   host: string
   startTime: number
   timestamp: number
+  invites?: Record<string, StopInvite> | null
 }
 
 export enum GameStatus {

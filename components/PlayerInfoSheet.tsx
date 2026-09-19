@@ -11,15 +11,23 @@ import { Theme } from "@/constants/Theme"
 import { auth } from "@/db/firebaseConfig"
 import Fire from "@/db/Fire"
 import { useFriends } from "@/hooks/useFriends"
-import { StopPlayer } from "@/interfaces/Player"
+import { StopPlayer, TTTPlayer } from "@/interfaces/Player"
 
 interface Props {
   sheetRef: RefObject<BottomSheet | null>
-  player: StopPlayer | null
+  player: StopPlayer | TTTPlayer | null
   myUid?: string | null
+  statValue?: number | null
+  statLabel?: string
 }
 
-export const PlayerInfoSheet = ({ sheetRef, player, myUid }: Props) => {
+export const PlayerInfoSheet = ({
+  sheetRef,
+  player,
+  myUid,
+  statValue,
+  statLabel,
+}: Props) => {
   const { t } = useTranslation()
   const { received, receivedIds, sentIds, friendsIds } = useFriends(myUid)
   const [workingId, setWorkingId] = useState("")
@@ -129,7 +137,13 @@ export const PlayerInfoSheet = ({ sheetRef, player, myUid }: Props) => {
   return (
     <BottomSheetModal
       title={player?.name ?? ""}
-      description={player ? `${player.points ?? 0} ${t("points")}` : undefined}
+      description={
+        statValue !== undefined
+          ? `${statValue ?? 0} ${statLabel ?? t("points")}`
+          : player
+            ? `${"points" in player ? (player.points ?? 0) : 0} ${t("points")}`
+            : undefined
+      }
       ref={sheetRef}
       icon={<UsersIcon size={20} color={Theme.colors.primarySoft} />}
     >

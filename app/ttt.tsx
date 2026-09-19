@@ -1,4 +1,7 @@
 import { CustomModal } from "@/components/CustomModal"
+import { Divider } from "@/components/Divider"
+import { PlayerInfoSheet } from "@/components/PlayerInfoSheet"
+import { TTTWinnerModal } from "@/components/TTTWinnerModal"
 import {
   BackIcon,
   CheckIcon,
@@ -10,8 +13,11 @@ import {
 } from "@/components/ui/Icons"
 import { Theme } from "@/constants/Theme"
 import Fire from "@/db/Fire"
+import { useFriends } from "@/hooks/useFriends"
 import { useStorage } from "@/hooks/useStorage"
 import { GameStatus, TTTModel } from "@/interfaces/Game"
+import { TTTPlayer } from "@/interfaces/Player"
+import { FriendEntry } from "@/interfaces/User"
 import { parseBoolean } from "@/libs/parseBoolean"
 import { sixDigit } from "@/libs/randomId"
 import BottomSheet from "@gorhom/bottom-sheet"
@@ -73,6 +79,9 @@ export default function TTT() {
   const [pointsAdded, setPointsAdded] = useState<boolean>(false)
   const [idModalVisible, setIdModalVisible] = useState<boolean>(true)
   const [copied, setCopied] = useState<boolean>(false)
+  const [selectedPlayer, setSelectedPlayer] = useState<TTTPlayer | null>(null)
+  const [winnerPlayer, setWinnerPlayer] = useState<TTTPlayer | null>(null)
+  const [inviteWorkingId, setInviteWorkingId] = useState<string>("")
   const [btnScales] = useState(() =>
     initialBoard.map(() => new Animated.Value(1)),
   )
@@ -85,8 +94,18 @@ export default function TTT() {
     mode: string
     id: string
   }>()
+  const myUid = getAuth().currentUser?.uid
+  const isHostLobby =
+    mode !== "offline" &&
+    mode !== "computer" &&
+    !!gameData &&
+    gameData.host === myUid &&
+    gameData.gameStatus === GameStatus.CREATED
+  const roomFull = isHostLobby && (gameData?.players?.length ?? 0) >= 2
+  const { friends } = useFriends(isHostLobby ? myUid : null)
 
   const sheetRef = useRef<BottomSheet>(null)
+  const playerSheetRef = useRef<BottomSheet>(null)
   const timerRef = useRef<NodeJS.Timeout | null>(null)
   const myId = useRef<string | null>(null)
   const roomId = useRef<string | null>(null)
@@ -175,7 +194,29 @@ export default function TTT() {
             })
           }
 
-          if (!pointsAdded) sumWins()
+          if (!pointsAdded) sumWins(board[a])
+
+          if (mode === "online" || mode === "join") {
+            const winnerPlayerData =
+              gameData?.players.find((p) => p.pos === board[a]) ??
+              (board[a] === myId.current
+                ? gameData?.players.find(
+                    (p) => p.id === getAuth().currentUser?.uid,
+                  )
+                : gameData?.players.find(
+                    (p) => p.id !== getAuth().currentUser?.uid,
+                  ))
+            setWinnerPlayer(
+              winnerPlayerData
+                ? {
+                    ...winnerPlayerData,
+                    wins:
+                      (winnerPlayerData.wins ?? 0) +
+                      (board[a] === myId.current ? 1 : 0),
+                  }
+                : null,
+            )
+          }
         }
 
         return
@@ -254,18 +295,23 @@ export default function TTT() {
     if (mode === "join") {
       Fire.getGame("ttt", gameId).then((data) => {
         if (!data) return
+        const tttData = data as TTTModel
         const userName = getAuth().currentUser?.displayName
         const userId = getAuth().currentUser?.uid
-        const alreadyIn = data.players.some((p) => p.id === userId)
+        const alreadyIn = tttData.players.some((p) => p.id === userId)
 
         if (!alreadyIn) {
+          const hostPos = tttData.players.find(
+            (p) => p.id === tttData.host,
+          )?.pos
           Fire.updateGame("ttt", gameId, {
             players: [
-              ...data.players,
+              ...tttData.players,
               {
                 id: userId,
                 name: userName,
                 photoURL: getAuth().currentUser?.photoURL!,
+                pos: hostPos === POS.X ? POS.O : POS.X,
                 wins: 0,
               },
             ],
@@ -308,6 +354,7 @@ export default function TTT() {
         if (currentGameData.gameStatus === GameStatus.CREATED) {
           setWinnerText(null)
           setWinner(null)
+          setWinnerPlayer(null)
           pointsAdded && setPointsAdded(false)
 
           if (mode === "online" && !myId.current) {
@@ -473,10 +520,59 @@ export default function TTT() {
     sheetRef.current?.expand()
   }
 
-  const sumWins = () => {
+  const handlePlayerTap = (player: TTTPlayer) => {
+    if (mode === "offline" || mode === "computer") return
+    if (!connection) return
+    if (player.id === getAuth().currentUser?.uid) return
+
+    sheetRef.current?.close()
+    setSelectedPlayer(player)
+    setTimeout(() => playerSheetRef.current?.expand(), 300)
+  }
+
+  const handleInvite = async (friend: FriendEntry) => {
+    if (!gameData || !myUid) return
+    setInviteWorkingId(friend.id)
+    try {
+      const result = await Fire.sendGameInvite(
+        gameData.gameId,
+        myUid,
+        getAuth().currentUser?.displayName,
+        getAuth().currentUser?.photoURL,
+        friend.id,
+        friend.name,
+        friend.photoURL,
+        undefined,
+        undefined,
+        "ttt",
+      )
+      if (result !== "ok") {
+        ToastAndroid.showWithGravity(
+          result === "full"
+            ? t("error_game_full")
+            : result === "started"
+              ? t("error_game_started")
+              : t("error_game_not_found"),
+          ToastAndroid.SHORT,
+          ToastAndroid.CENTER,
+        )
+      }
+    } catch {
+      /* ignore */
+    } finally {
+      setInviteWorkingId("")
+    }
+  }
+
+  const handleRematch = () => {
+    setWinnerPlayer(null)
+    handleReset()
+  }
+
+  const sumWins = (winnerPos: string) => {
     if (!gameData) return
     if (!getAuth().currentUser?.uid) return
-    if (winner !== myId.current) return
+    if (winnerPos !== myId.current) return
 
     const userId = getAuth().currentUser?.uid
 
@@ -747,7 +843,7 @@ export default function TTT() {
         )}
 
         <View style={styles.restartRow}>
-          {winner && mode === "online" && (
+          {winner && (mode === "online" || mode === "join") && (
             <PlayingButton
               flag="restart"
               onPress={() => handleReset()}
@@ -782,6 +878,7 @@ export default function TTT() {
               .map((player, index) => (
                 <Pressable
                   key={player.id}
+                  onPress={() => handlePlayerTap(player)}
                   style={({ pressed }) => [
                     {
                       opacity: pressed ? 0.75 : 1,
@@ -830,7 +927,98 @@ export default function TTT() {
                 </Pressable>
               ))}
         </View>
+
+        {isHostLobby && gameData && (
+          <View style={styles.inviteSection}>
+            <Divider />
+
+            <View style={styles.inviteHeader}>
+              <Text style={styles.inviteTitle}>{t("invite_friends")}</Text>
+              <Text style={styles.inviteCount}>
+                {gameData.players.length}/2
+              </Text>
+            </View>
+
+            {roomFull ? (
+              <Text style={styles.inviteHint}>{t("error_game_full")}</Text>
+            ) : friends.length === 0 ? (
+              <Text style={styles.inviteHint}>{t("no_friends")}</Text>
+            ) : (
+              friends.map((friend) => {
+                if (gameData.players.some((p) => p.id === friend.id))
+                  return null
+                const inviteStatus = gameData.invites?.[friend.id]?.status
+                const busy = inviteWorkingId === friend.id
+                const disabled =
+                  busy ||
+                  inviteStatus === "pending" ||
+                  inviteStatus === "joined"
+                const label =
+                  inviteStatus === "pending"
+                    ? t("invited")
+                    : inviteStatus === "joined"
+                      ? t("joined")
+                      : t("invite")
+
+                return (
+                  <View key={friend.id} style={styles.inviteRow}>
+                    <View style={styles.avatar}>
+                      {friend.photoURL ? (
+                        <Image
+                          style={styles.avatarImage}
+                          source={{ uri: friend.photoURL }}
+                        />
+                      ) : (
+                        <UserIcon
+                          size={20}
+                          color={Theme.colors.primarySoft}
+                        />
+                      )}
+                    </View>
+
+                    <Text style={styles.playerName} numberOfLines={1}>
+                      {friend.name ?? "Unknown"}
+                    </Text>
+
+                    <Pressable
+                      onPress={() => !disabled && handleInvite(friend)}
+                      disabled={disabled}
+                      style={({ pressed }) => [
+                        styles.inviteBtn,
+                        disabled && styles.inviteBtnDisabled,
+                        { opacity: pressed ? 0.7 : 1 },
+                      ]}
+                    >
+                      {busy ? (
+                        <ActivityIndicator
+                          size="small"
+                          color={Theme.colors.primarySoft}
+                        />
+                      ) : (
+                        <Text style={styles.inviteBtnText}>{label}</Text>
+                      )}
+                    </Pressable>
+                  </View>
+                )
+              })
+            )}
+          </View>
+        )}
       </BottomSheetModal>
+
+      <TTTWinnerModal
+        winner={winnerPlayer}
+        onClose={() => setWinnerPlayer(null)}
+        onPlayAgain={handleRematch}
+      />
+
+      <PlayerInfoSheet
+        sheetRef={playerSheetRef}
+        player={selectedPlayer}
+        myUid={myUid}
+        statValue={selectedPlayer?.wins ?? null}
+        statLabel={t("wins")}
+      />
     </Screen>
   )
 }
@@ -1143,5 +1331,59 @@ const styles = StyleSheet.create({
   },
   leaderPointsText: {
     color: Theme.colors.primarySoft,
+  },
+  inviteSection: {
+    marginTop: Theme.spacing.m,
+    gap: Theme.spacing.m,
+  },
+  inviteHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  inviteTitle: {
+    color: Theme.colors.darkGray,
+    fontFamily: Theme.fonts.onestBold,
+    fontSize: Theme.sizes.h6,
+    textTransform: "uppercase",
+    letterSpacing: 2,
+  },
+  inviteCount: {
+    color: Theme.colors.primarySoft,
+    fontFamily: Theme.fonts.onestBold,
+    fontSize: Theme.sizes.h5,
+    fontVariant: ["tabular-nums"],
+  },
+  inviteHint: {
+    color: Theme.colors.gray,
+    fontFamily: Theme.fonts.onest,
+    fontSize: Theme.sizes.h5,
+    textAlign: "center",
+    paddingVertical: Theme.spacing.m,
+  },
+  inviteRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Theme.spacing.m,
+  },
+  inviteBtn: {
+    backgroundColor: Theme.colors.primary2,
+    borderWidth: 1,
+    borderColor: Theme.colors.primarySoft,
+    borderRadius: Theme.radii.pill,
+    paddingHorizontal: Theme.spacing.m,
+    paddingVertical: Theme.spacing.s,
+    minWidth: 74,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  inviteBtnDisabled: {
+    backgroundColor: Theme.colors.surface,
+    borderColor: Theme.colors.borderSoft,
+  },
+  inviteBtnText: {
+    color: Theme.colors.primarySoft,
+    fontFamily: Theme.fonts.onestBold,
+    fontSize: Theme.sizes.h6,
   },
 })

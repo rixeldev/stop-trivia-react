@@ -145,20 +145,31 @@ export default function Layout() {
         user.displayName,
         user.photoURL,
         invite.gameId,
+        invite.gameType ?? "stop",
       )
       if (result === "ok") {
         setInvites((prev) =>
           prev.filter((entry) => entry.gameId !== invite.gameId),
         )
-        router.push({
-          pathname: "stop",
-          params: {
-            mode: "join",
-            id: invite.gameId,
-            time: invite.currentTime ? String(invite.currentTime) : "120",
-            rounds: invite.maxRounds ? String(invite.maxRounds) : undefined,
-          },
-        })
+        if (invite.gameType === "ttt") {
+          router.push({
+            pathname: "ttt",
+            params: {
+              mode: "join",
+              id: invite.gameId,
+            },
+          })
+        } else {
+          router.push({
+            pathname: "stop",
+            params: {
+              mode: "join",
+              id: invite.gameId,
+              time: invite.currentTime ? String(invite.currentTime) : "120",
+              rounds: invite.maxRounds ? String(invite.maxRounds) : undefined,
+            },
+          })
+        }
       } else {
         ToastAndroid.showWithGravity(
           result === "full"
@@ -182,7 +193,7 @@ export default function Layout() {
   const handleInviteDecline = async () => {
     const invite = invites[0]
     if (!invite || !user) return
-    await Fire.declineGameInvite(user.uid, invite.gameId)
+    await Fire.declineGameInvite(user.uid, invite.gameId, invite.gameType ?? "stop")
     setInvites((prev) =>
       prev.filter((entry) => entry.gameId !== invite.gameId),
     )

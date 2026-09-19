@@ -3,17 +3,19 @@ import { LinearGradient } from "expo-linear-gradient"
 import { useTranslation } from "react-i18next"
 import { getAuth } from "@react-native-firebase/auth"
 import { Theme } from "@/constants/Theme"
-import { StopPlayer } from "@/interfaces/Player"
+import { TTTPlayer } from "@/interfaces/Player"
 import { TrophyIcon, UserIcon } from "@/components/ui/Icons"
 import { PrimaryButton } from "@/components/ui/PrimaryButton"
+import { SecondaryButton } from "@/components/ui/SecondaryButton"
 import { ConfettiLayer } from "@/components/Confetti"
 
 interface Props {
-  winner: StopPlayer | null
+  winner: TTTPlayer | null
   onClose: () => void
+  onPlayAgain: () => void
 }
 
-export const WinnerModal = ({ winner, onClose }: Props) => {
+export const TTTWinnerModal = ({ winner, onClose, onPlayAgain }: Props) => {
   const { t } = useTranslation()
   const { height } = useWindowDimensions()
 
@@ -59,17 +61,18 @@ export const WinnerModal = ({ winner, onClose }: Props) => {
             {isMe ? t("you_win") : t("player_wins", { name: winner.name })}
           </Text>
 
-          <View style={styles.pointsChip}>
-            <Text style={styles.pointsValue}>{winner.points ?? 0}</Text>
-            <Text style={styles.pointsLabel}>{t("points")}</Text>
+          <View style={styles.winsChip}>
+            <Text style={styles.winsValue}>{winner.wins ?? 0}</Text>
+            <Text style={styles.winsLabel}>{t("wins")}</Text>
           </View>
 
           <PrimaryButton
-            title={t("close")}
-            onPress={onClose}
+            title={t("play_again")}
+            onPress={onPlayAgain}
             block
             icon={<TrophyIcon size={18} color={Theme.colors.text} />}
           />
+          <SecondaryButton title={t("close")} onPress={onClose} block />
         </View>
       </LinearGradient>
     </Modal>
@@ -140,7 +143,7 @@ const styles = StyleSheet.create({
     marginTop: Theme.spacing.xs,
     marginBottom: Theme.spacing.m,
   },
-  pointsChip: {
+  winsChip: {
     flexDirection: "row",
     alignItems: "baseline",
     gap: Theme.spacing.s,
@@ -152,13 +155,13 @@ const styles = StyleSheet.create({
     borderColor: Theme.colors.borderSoft,
     marginBottom: Theme.spacing.xl,
   },
-  pointsValue: {
+  winsValue: {
     color: Theme.colors.yellow,
     fontFamily: Theme.fonts.onestBold,
     fontSize: Theme.sizes.h2,
     fontVariant: ["tabular-nums"],
   },
-  pointsLabel: {
+  winsLabel: {
     color: Theme.colors.gray,
     fontFamily: Theme.fonts.onest,
     fontSize: Theme.sizes.h5,

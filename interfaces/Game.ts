@@ -1,6 +1,22 @@
 import { StopPlayer, TTTPlayer } from "@/interfaces/Player"
 import { StopGameInputs } from "@/interfaces/StopGameInputs"
 
+export interface StopInvite {
+  name?: string | null
+  photoURL?: string | null
+  status: "pending" | "declined" | "joined"
+}
+
+export interface GameInviteEntry {
+  gameId: string
+  hostUid: string
+  hostName?: string | null
+  hostPhotoURL?: string | null
+  currentTime?: number | null
+  maxRounds?: number | null
+  sentAt?: number | null
+}
+
 export interface StopModel {
   gameId: string
   round: number
@@ -18,6 +34,7 @@ export interface StopModel {
   reviewedRound?: number | null
   maxRounds?: number | null
   finished?: boolean
+  invites?: Record<string, StopInvite> | null
 }
 
 export interface WordReview {

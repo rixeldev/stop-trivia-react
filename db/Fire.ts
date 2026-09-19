@@ -18,6 +18,7 @@ import {
   GameStatus,
   TTTModel,
   StopReviewSubmission,
+  GameInviteEntry,
 } from "@/interfaces/Game"
 import { StopPlayer, TTTPlayer } from "@/interfaces/Player"
 import { StopGameInputs } from "@/interfaces/StopGameInputs"
@@ -401,6 +402,165 @@ class Fire {
       })
       callback(entries)
     })
+  }
+
+  onGameInvites = (
+    uid: string,
+    callback: (entries: GameInviteEntry[]) => void
+  ) => {
+    const ref = collection(db, "users", uid, "gameInvites")
+    return onSnapshot(ref, (snapshot) => {
+      const entries: GameInviteEntry[] = snapshot.docs.map((docSnap: any) => {
+        const data = docSnap.data()
+        return {
+          gameId: docSnap.id,
+          hostUid: data.hostUid ?? "",
+          hostName: data.hostName ?? null,
+          hostPhotoURL: data.hostPhotoURL ?? null,
+          currentTime: data.currentTime ?? null,
+          maxRounds: data.maxRounds ?? null,
+          sentAt: toTime(data.sentAt),
+        }
+      })
+      callback(entries)
+    })
+  }
+
+  sendGameInvite = async (
+    gameId: string,
+    fromId: string,
+    fromName: string | null | undefined,
+    fromPhotoURL: string | null | undefined,
+    toId: string,
+    toName: string | null | undefined,
+    toPhotoURL: string | null | undefined,
+    currentTime?: number | null,
+    maxRounds?: number | null
+  ): Promise<"ok" | "full" | "started" | "error"> => {
+    if (!gameId || !fromId || !toId || fromId === toId) return "error"
+    const gameRef = doc(db, "stop", gameId)
+    const inviteRef = doc(db, "users", toId, "gameInvites", gameId)
+    let result: "ok" | "full" | "started" | "error" = "error"
+
+    try {
+      await runTransaction(db, async (tx) => {
+        const snap = await tx.get(gameRef)
+        if (!snap.exists()) return
+        const data = snap.data() as StopModel
+        if (data.gameStatus !== GameStatus.CREATED) {
+          result = "started"
+          return
+        }
+        if ((data.players ?? []).length >= 4) {
+          result = "full"
+          return
+        }
+        if ((data.players ?? []).some((p) => p.id === toId)) return
+
+        tx.set(inviteRef, {
+          hostUid: fromId,
+          hostName: fromName ?? "Unknown",
+          hostPhotoURL: fromPhotoURL ?? "",
+          gameId,
+          currentTime: currentTime ?? null,
+          maxRounds: maxRounds ?? null,
+          sentAt: serverTimestamp(),
+        })
+        tx.update(gameRef, {
+          [`invites.${toId}`]: {
+            name: toName ?? "Unknown",
+            photoURL: toPhotoURL ?? "",
+            status: "pending",
+          },
+        })
+        result = "ok"
+      })
+      return result
+    } catch (error) {
+      console.log(error)
+      return "error"
+    }
+  }
+
+  acceptGameInvite = async (
+    uid: string,
+    name: string | null | undefined,
+    photoURL: string | null | undefined,
+    gameId: string
+  ): Promise<"ok" | "full" | "started" | "closed" | "error"> => {
+    if (!uid || !gameId) return "error"
+    const gameRef = doc(db, "stop", gameId)
+    const inviteRef = doc(db, "users", uid, "gameInvites", gameId)
+    let result: "ok" | "full" | "started" | "closed" | "error" = "error"
+
+    try {
+      await runTransaction(db, async (tx) => {
+        const snap = await tx.get(gameRef)
+        if (!snap.exists()) {
+          tx.delete(inviteRef)
+          result = "closed"
+          return
+        }
+        const data = snap.data() as StopModel
+
+        if (data.gameStatus !== GameStatus.CREATED) {
+          tx.delete(inviteRef)
+          tx.update(gameRef, { [`invites.${uid}.status`]: "declined" })
+          result = "started"
+          return
+        }
+
+        const alreadyIn = (data.players ?? []).some((p) => p.id === uid)
+        if (alreadyIn) {
+          tx.delete(inviteRef)
+          tx.update(gameRef, { [`invites.${uid}.status`]: "joined" })
+          result = "ok"
+          return
+        }
+
+        if ((data.players ?? []).length >= 4) {
+          tx.delete(inviteRef)
+          tx.update(gameRef, { [`invites.${uid}.status`]: "declined" })
+          result = "full"
+          return
+        }
+
+        tx.update(gameRef, {
+          players: [
+            ...(data.players ?? []),
+            {
+              id: uid,
+              name: name ?? "Unknown",
+              points: 0,
+              photoURL: photoURL ?? "",
+            },
+          ],
+          [`invites.${uid}.status`]: "joined",
+        })
+        tx.delete(inviteRef)
+        result = "ok"
+      })
+      return result
+    } catch (error) {
+      console.log(error)
+      return "error"
+    }
+  }
+
+  declineGameInvite = async (uid: string, gameId: string): Promise<void> => {
+    if (!uid || !gameId) return
+    try {
+      await deleteDoc(doc(db, "users", uid, "gameInvites", gameId))
+    } catch {
+      /* ignore */
+    }
+    try {
+      await updateDoc(doc(db, "stop", gameId), {
+        [`invites.${uid}.status`]: "declined",
+      })
+    } catch {
+      /* ignore */
+    }
   }
 
   sendFriendRequest = async (

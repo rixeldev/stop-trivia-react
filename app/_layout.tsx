@@ -1,7 +1,7 @@
 import "@/services/i18next"
 import React, { useEffect, useState } from "react"
-import { Image, Pressable, Text, View } from "react-native"
-import { Link, Stack } from "expo-router"
+import { Image, Pressable, Text, ToastAndroid, View } from "react-native"
+import { Link, Stack, useRouter } from "expo-router"
 import { SafeAreaProvider } from "react-native-safe-area-context"
 import { GestureHandlerRootView } from "react-native-gesture-handler"
 import { StatusBar } from "expo-status-bar"
@@ -28,6 +28,8 @@ import { parseBoolean } from "@/libs/parseBoolean"
 import Fire from "@/db/Fire"
 import { useFriends } from "@/hooks/useFriends"
 import { ProfileSyncModal } from "@/components/ProfileSyncModal"
+import { GameInviteModal } from "@/components/GameInviteModal"
+import { GameInviteEntry } from "@/interfaces/Game"
 
 export default function Layout() {
   const [isAppReady, setIsAppReady] = useState(false)
@@ -38,10 +40,14 @@ export default function Layout() {
   const [firstTime, setFirstTime] = useState<boolean | null>(null)
   const [profileChecked, setProfileChecked] = useState(false)
   const [profileSaved, setProfileSaved] = useState(false)
+  const [invites, setInvites] = useState<GameInviteEntry[]>([])
+  const [inviteLoading, setInviteLoading] = useState(false)
+
+  const router = useRouter()
 
   const { received } = useFriends(user?.uid)
 
-  const { i18n } = useTranslation()
+  const { i18n, t } = useTranslation()
   const { getItem, setItem } = useStorage()
 
   const handleAuthStateChanged = (user: FirebaseAuthTypes.User | null) => {
@@ -58,6 +64,14 @@ export default function Layout() {
     })
     return unsubscribe
   }, [user])
+
+  useEffect(() => {
+    if (!user?.uid) return
+    const unsubscribe = Fire.onGameInvites(user.uid, (entries) =>
+      setInvites(entries),
+    )
+    return unsubscribe
+  }, [user?.uid])
 
   useEffect(() => {
     setLoading(true)
@@ -119,6 +133,59 @@ export default function Layout() {
   const handleOnboardingOnDone = async () => {
     await setItem("first_time", "false")
     setFirstTime(false)
+  }
+
+  const handleInviteAccept = async () => {
+    const invite = invites[0]
+    if (!invite || !user) return
+    setInviteLoading(true)
+    try {
+      const result = await Fire.acceptGameInvite(
+        user.uid,
+        user.displayName,
+        user.photoURL,
+        invite.gameId,
+      )
+      if (result === "ok") {
+        setInvites((prev) =>
+          prev.filter((entry) => entry.gameId !== invite.gameId),
+        )
+        router.push({
+          pathname: "stop",
+          params: {
+            mode: "join",
+            id: invite.gameId,
+            time: invite.currentTime ? String(invite.currentTime) : "120",
+            rounds: invite.maxRounds ? String(invite.maxRounds) : undefined,
+          },
+        })
+      } else {
+        ToastAndroid.showWithGravity(
+          result === "full"
+            ? t("error_game_full")
+            : result === "started"
+              ? t("error_game_started")
+              : result === "closed"
+                ? t("host_closed_game")
+                : t("error_game_not_found"),
+          ToastAndroid.SHORT,
+          ToastAndroid.CENTER,
+        )
+      }
+    } catch {
+      /* ignore */
+    } finally {
+      setInviteLoading(false)
+    }
+  }
+
+  const handleInviteDecline = async () => {
+    const invite = invites[0]
+    if (!invite || !user) return
+    await Fire.declineGameInvite(user.uid, invite.gameId)
+    setInvites((prev) =>
+      prev.filter((entry) => entry.gameId !== invite.gameId),
+    )
   }
 
   if (!loaded || !isAppReady) {
@@ -260,6 +327,13 @@ export default function Layout() {
       </GestureHandlerRootView>
 
       {profileChecked && user && !profileSaved && <ProfileSyncModal visible />}
+
+      <GameInviteModal
+        invite={invites[0] ?? null}
+        onAccept={handleInviteAccept}
+        onDecline={handleInviteDecline}
+        loading={inviteLoading}
+      />
     </SafeAreaProvider>
   )
 }

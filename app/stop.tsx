@@ -65,6 +65,9 @@ import { Loading } from "@/components/Loading"
 import { LinearGradient } from "expo-linear-gradient"
 import { adInterstitialId } from "@/db/firebaseConfig"
 import { WinnerModal } from "@/components/WinnerModal"
+import { useFriends } from "@/hooks/useFriends"
+import { Divider } from "@/components/Divider"
+import { FriendEntry } from "@/interfaces/User"
 
 const adUnitId = __DEV__ ? TestIds.INTERSTITIAL : adInterstitialId
 
@@ -103,6 +106,7 @@ export default function Stop() {
   const [myChoice, setMyChoice] = useState<boolean | null>(null)
   const [myReviewSubmitted, setMyReviewSubmitted] = useState<boolean>(false)
   const [winner, setWinner] = useState<StopPlayer | null>(null)
+  const [inviteWorkingId, setInviteWorkingId] = useState<string>("")
   const [inputs, setInputs] = useState({
     name: "",
     lastName: "",
@@ -136,6 +140,14 @@ export default function Stop() {
     time: string
     rounds?: string
   }>()
+  const myUid = getAuth().currentUser?.uid
+  const isHostLobby =
+    mode !== "offline" &&
+    !!gameData &&
+    gameData.host === myUid &&
+    gameData.gameStatus === GameStatus.CREATED
+  const roomFull = isHostLobby && (gameData?.players?.length ?? 0) >= 4
+  const { friends } = useFriends(isHostLobby ? myUid : null)
 
   const interstitial = InterstitialAd.createForAdRequest(adUnitId, {
     keywords: [
@@ -733,6 +745,39 @@ export default function Stop() {
     sheetRef.current?.expand()
   }
 
+  const handleInvite = async (friend: FriendEntry) => {
+    if (!gameData || !myUid) return
+    setInviteWorkingId(friend.id)
+    try {
+      const result = await Fire.sendGameInvite(
+        gameData.gameId,
+        myUid,
+        getAuth().currentUser?.displayName,
+        getAuth().currentUser?.photoURL,
+        friend.id,
+        friend.name,
+        friend.photoURL,
+        gameData.currentTime,
+        gameData.maxRounds ?? null,
+      )
+      if (result !== "ok") {
+        ToastAndroid.showWithGravity(
+          result === "full"
+            ? t("error_game_full")
+            : result === "started"
+              ? t("error_game_started")
+              : t("error_game_not_found"),
+          ToastAndroid.SHORT,
+          ToastAndroid.CENTER,
+        )
+      }
+    } catch {
+      /* ignore */
+    } finally {
+      setInviteWorkingId("")
+    }
+  }
+
   const startFastPulse = () => {
     Animated.loop(
       Animated.sequence([
@@ -1187,6 +1232,83 @@ export default function Stop() {
                 </Pressable>
               ))}
         </View>
+
+          {isHostLobby && gameData && (
+            <View style={styles.inviteSection}>
+              <Divider />
+
+              <View style={styles.inviteHeader}>
+                <Text style={styles.inviteTitle}>{t("invite_friends")}</Text>
+                <Text style={styles.inviteCount}>
+                  {gameData.players.length}/4
+                </Text>
+              </View>
+
+              {roomFull ? (
+                <Text style={styles.inviteHint}>{t("error_game_full")}</Text>
+              ) : friends.length === 0 ? (
+                <Text style={styles.inviteHint}>{t("no_friends")}</Text>
+              ) : (
+                friends.map((friend) => {
+                  if (gameData.players.some((p) => p.id === friend.id))
+                    return null
+                  const inviteStatus = gameData.invites?.[friend.id]?.status
+                  const busy = inviteWorkingId === friend.id
+                  const disabled =
+                    busy ||
+                    inviteStatus === "pending" ||
+                    inviteStatus === "joined"
+                  const label =
+                    inviteStatus === "pending"
+                      ? t("invited")
+                      : inviteStatus === "joined"
+                        ? t("joined")
+                        : t("invite")
+
+                  return (
+                    <View key={friend.id} style={styles.inviteRow}>
+                      <View style={styles.avatar}>
+                        {friend.photoURL ? (
+                          <Image
+                            style={styles.avatarImage}
+                            source={{ uri: friend.photoURL }}
+                          />
+                        ) : (
+                          <UserIcon
+                            size={20}
+                            color={Theme.colors.primarySoft}
+                          />
+                        )}
+                      </View>
+
+                      <Text style={styles.playerName} numberOfLines={1}>
+                        {friend.name ?? "Unknown"}
+                      </Text>
+
+                      <Pressable
+                        onPress={() => !disabled && handleInvite(friend)}
+                        disabled={disabled}
+                        style={({ pressed }) => [
+                          styles.inviteBtn,
+                          disabled && styles.inviteBtnDisabled,
+                          { opacity: pressed ? 0.7 : 1 },
+                        ]}
+                      >
+                        {busy ? (
+                          <ActivityIndicator
+                            size="small"
+                            color={Theme.colors.primarySoft}
+                          />
+                        ) : (
+                          <Text style={styles.inviteBtnText}>{label}</Text>
+                        )}
+                      </Pressable>
+                    </View>
+                  )
+                })
+              )}
+            </View>
+          )}
       </BottomSheetModal>
 
       <PlayerInfoSheet
@@ -1625,5 +1747,59 @@ const styles = StyleSheet.create({
   },
   leaderPointsText: {
     color: Theme.colors.primarySoft,
+  },
+  inviteSection: {
+    marginTop: Theme.spacing.m,
+    gap: Theme.spacing.m,
+  },
+  inviteHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  inviteTitle: {
+    color: Theme.colors.darkGray,
+    fontFamily: Theme.fonts.onestBold,
+    fontSize: Theme.sizes.h6,
+    textTransform: "uppercase",
+    letterSpacing: 2,
+  },
+  inviteCount: {
+    color: Theme.colors.primarySoft,
+    fontFamily: Theme.fonts.onestBold,
+    fontSize: Theme.sizes.h5,
+    fontVariant: ["tabular-nums"],
+  },
+  inviteHint: {
+    color: Theme.colors.gray,
+    fontFamily: Theme.fonts.onest,
+    fontSize: Theme.sizes.h5,
+    textAlign: "center",
+    paddingVertical: Theme.spacing.m,
+  },
+  inviteRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Theme.spacing.m,
+  },
+  inviteBtn: {
+    backgroundColor: Theme.colors.primary2,
+    borderWidth: 1,
+    borderColor: Theme.colors.primarySoft,
+    borderRadius: Theme.radii.pill,
+    paddingHorizontal: Theme.spacing.m,
+    paddingVertical: Theme.spacing.s,
+    minWidth: 74,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  inviteBtnDisabled: {
+    backgroundColor: Theme.colors.surface,
+    borderColor: Theme.colors.borderSoft,
+  },
+  inviteBtnText: {
+    color: Theme.colors.primarySoft,
+    fontFamily: Theme.fonts.onestBold,
+    fontSize: Theme.sizes.h6,
   },
 })

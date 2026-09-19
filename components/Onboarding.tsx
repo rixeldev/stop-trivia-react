@@ -3,11 +3,11 @@ import { Slide } from "@/interfaces/Slide"
 import { LinearGradient } from "expo-linear-gradient"
 import LottieView from "lottie-react-native"
 import { useTranslation } from "react-i18next"
-import { Image, StyleSheet, Text, View } from "react-native"
+import { Image, Pressable, StyleSheet, Text, View } from "react-native"
 import AppIntroSlider from "react-native-app-intro-slider"
 import ic from "@/assets/lotties/ic_brand.json"
 import { useStorage } from "@/hooks/useStorage"
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 
 interface Props {
   onDone: () => void
@@ -30,6 +30,7 @@ export function Onboarding({ onDone }: Props) {
   const { t } = useTranslation()
   const { getItem } = useStorage()
   const [language, setLanguage] = useState<"en" | "es">("en")
+  const sliderRef = useRef<AppIntroSlider>(null)
 
   useEffect(() => {
     const loadLanguage = async () => {
@@ -134,10 +135,10 @@ export function Onboarding({ onDone }: Props) {
 
   return (
     <AppIntroSlider
+      ref={sliderRef}
       data={slides}
       renderItem={renderItem}
       onDone={onDone}
-      showSkipButton={true}
       activeDotStyle={{
         backgroundColor: Theme.colors.primarySoft,
         width: 26,
@@ -150,9 +151,44 @@ export function Onboarding({ onDone }: Props) {
         height: 8,
         borderRadius: 4,
       }}
-      renderSkipButton={() => buttonLabel(t("skip"))}
-      renderNextButton={() => buttonLabel(t("next"), true)}
-      renderDoneButton={() => buttonLabel(t("done"), true)}
+      renderPagination={(activeIndex) => {
+        const isLastSlide = activeIndex === slides.length - 1
+        return (
+          <View style={styles.paginationContainer}>
+            <View style={styles.paginationDots}>
+              {slides.map((slide, i) => (
+                <View
+                  key={slide.key}
+                  style={[
+                    styles.dot,
+                    i === activeIndex ? styles.dotActive : styles.dotInactive,
+                  ]}
+                />
+              ))}
+            </View>
+            <Pressable
+              style={styles.rightButtonContainer}
+              onPress={() =>
+                isLastSlide
+                  ? onDone()
+                  : sliderRef.current?.goToSlide(activeIndex + 1)
+              }
+            >
+              {isLastSlide
+                ? buttonLabel(t("done"), true)
+                : buttonLabel(t("next"), true)}
+            </Pressable>
+            {!isLastSlide && (
+              <Pressable
+                style={styles.leftButtonContainer}
+                onPress={() => sliderRef.current?.goToSlide(slides.length - 1)}
+              >
+                {buttonLabel(t("skip"))}
+              </Pressable>
+            )}
+          </View>
+        )
+      }}
     />
   )
 }
@@ -209,6 +245,41 @@ const styles = StyleSheet.create({
     color: Theme.colors.primarySoft,
     fontFamily: Theme.fonts.onestBold,
     fontSize: Theme.sizes.h4,
+  },
+  paginationContainer: {
+    position: "absolute",
+    bottom: 16,
+    left: 16,
+    right: 16,
+    justifyContent: "center",
+  },
+  paginationDots: {
+    height: 16,
+    margin: 16,
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  dot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginHorizontal: 4,
+  },
+  dotActive: {
+    backgroundColor: Theme.colors.primarySoft,
+    width: 26,
+  },
+  dotInactive: {
+    backgroundColor: Theme.colors.darkGray,
+  },
+  leftButtonContainer: {
+    position: "absolute",
+    left: 0,
+  },
+  rightButtonContainer: {
+    position: "absolute",
+    right: 0,
   },
   mainContent: {
     flex: 1,

@@ -55,7 +55,7 @@ ESLint config (`eslint.config.js`):
 
 ```
 app/              # Expo Router screens: _layout.tsx, (tabs)/, stop.tsx, ttt.tsx, settings.tsx
-components/       # Reusable UI components
+components/       # Reusable UI components: BottomSheetModal, PlayerInfoSheet, GameInviteModal, WinnerModal, TTTWinnerModal, Confetti, ReviewWizard, Onboarding, ...
 constants/        # Theme.ts, GoogleAuth.ts
 db/               # Firebase config, Firestore queries (firebaseConfig.ts, Fire.ts, FetchVersion.ts)
 hooks/            # useStorage (AsyncStorage wrapper)
@@ -76,8 +76,18 @@ tests/e2e/        # Detox E2E tests (separate npm package)
 - `db/Fire.ts` API: `markProfileSaved`, `onProfileSaved`, `getFriendProfile`, `onFriends`/`onReceivedRequests`/`onSentRequests` (onSnapshot subscriptions), `sendFriendRequest`, `acceptFriendRequest`, `declineFriendRequest`, `cancelFriendRequest`, `removeFriend`. `markProfileSaved` and accept/remove run in `runTransaction`s; decline/cancel are direct `deleteDoc`s.
 - **Reauth gate**: `app/_layout.tsx` subscribes to `onProfileSaved` (checks the `users/{uid}` doc exists). When a logged-in user has **no doc in `users`**, a non-dismissable `ProfileSyncModal` (full-screen, `onRequestClose` no-op) appears. Its button signs the user out, dropping them on the login page; logging in again calls `markProfileSaved` (doc now exists) and the modal never returns. The modal is only rendered inside the app shell, so the "update required" screen (`AppVersionUpdate`) always takes precedence.
 - `hooks/useFriends(uid)` subscribes to all three subcollections and returns `{ friends, received, sent, friendsIds, receivedIds, sentIds, isFriend }` — shared by `app/friends.tsx` and `components/PlayerInfoSheet.tsx`.
-- UX: tapping another player in a stop room opens `PlayerInfoSheet` (BottomSheetModal) with that player's info and a contextual friend action (Add / Accept / Cancel / Remove); `app/friends.tsx` (reachable from Settings) lists friends and requests and supports adding by user ID.
+- UX: tapping another player in a **stop or ttt** room opens `PlayerInfoSheet` (BottomSheetModal) with that player's info and a contextual friend action (Add / Accept / Cancel / Remove); `app/friends.tsx` (reachable from Settings) lists friends and requests and supports adding by user ID.
+- `components/PlayerInfoSheet.tsx`: `player` is `StopPlayer | TTTPlayer | null` plus optional `statValue`/`statLabel` (overrides the default points stat). `app/stop.tsx` passes nothing (points), `app/ttt.tsx` passes wins.
 - All friend subcollection docs are keyed by Firebase UID; profile data from a game's `players[]` (id/name/photoURL) is embedded in requests so friend discovery from a room works even if the target has no `users/{uid}` doc yet.
+
+## Game Invites (Online Rooms)
+
+- Invites go from the **room host** to an existing **friend**: send = write a subcollection doc `users/{toUid}/gameInvites/{gameId}`; also mirror the status on the game doc at `{gameId}.invites.{toUid}` = `{ name, photoURL, status }` (`"pending" | "declined" | "joined"`) so the host's sheet live-updates. `room/code`, `time`, and descriptions come from `GameInviteEntry` fields.
+- `db/Fire.ts` invite API is **game-agnostic** — `sendGameInvite`/`acceptGameInvite`/`declineGameInvite` take a trailing `gameType: "stop" | "ttt"` and enforce a per-game player cap (`ttt` = 2, `stop` = 4). `acceptGameInvite` appends the joining player with the game's own shape (TTT gains `pos` = opposite of the host's `pos` and `wins: 0`; Stop gains `points: 0`). Decline sets `"declined"` so the host's Invite button re-enables.
+- Invite docs must carry `gameType` for routing; `onGameInvites` falls back to `"stop"` for legacy docs. New `TTTModel.invites` / `GameInviteEntry.gameType` fields are optional/nullable.
+- `app/_layout.tsx` subscribes globally via `onGameInvites(uid, ...)`. `handleInviteAccept` navigates to `ttt` (`{ mode: "join", id }`) when `invite.gameType === "ttt"`, otherwise to `stop` (with `time`/`rounds`); `handleInviteDecline` passes the gameType too. Accept/decline errors toast `error_game_full` / `error_game_started` / `error_game_closed` / `error_game_not_found`.
+- `components/GameInviteModal.tsx`: invitee pop-up; the description key switches on `gameType` (`game_invite_desc` vs `game_invite_desc_ttt`).
+- Host UI: an invite section lives inside the **players sheet** in both `app/stop.tsx` (4-cap) and `app/ttt.tsx` (2-cap) — host-only, rendered while the room is `CREATED` (shows "X/4" / "X/2", "This room is full" at cap, "no friends" hint otherwise), with per-friend Invite/Invited/Joined pill buttons driven by `gameData.invites` and a `busy`/`inviteWorkingId` spinner during the write.
 
 ## Firebase Cloud Functions
 
@@ -119,9 +129,23 @@ tests/e2e/        # Detox E2E tests (separate npm package)
 - Schema evolution: new `StopModel`/`StopPlayer` fields must be **optional/nullable** (e.g. `scoring`, `scoredRound`, `reviews`, `reviewedRound`, `inputsRound`) so existing Firestore docs don't break.
 - Online displayed points come from the authoritative `gameData.players[].points` (via uid lookup), never from local state.
 
+## Tic Tac Toe Online (ttt.tsx)
+
+- Modes: `offline`, `computer`, `online` (host creates a room), `join` (enters via room code or an invite). Online rooms are full at **2 players**; players cannot join once a match is underway.
+- `gameStatus` stays `CREATED` during regular play — moves only update `filledPos`/`currentWinner`/`currentPlayer`, **not** the status. It flips to `STOPPED` only when a round is won (online). Consequences: screens that gate on `IN_PROGRESS` don't apply here, and `isHostLobby` (host + `CREATED`) stays true *during* a match, so the invite section naturally shows "This room is full".
+- Winner handling (per-client effect on `board`):
+  - The winning line resolves to a `pos` (row/col/diag index). Always pass it explicitly to `sumWins(winnerPos)` — reading the `winner` state inside the effect is stale (its closure is always null), which used to make wins never increment.
+  - Picks `winnerPlayer` for the modal by matching `gameData.players[].pos` to the winning pos, with a by-uid fallback (legacy manual code-joins had no `pos`; the join flow now sets `pos` = opposite of the host's `pos`).
+  - In online modes the win is persisted via `Fire.updateGame` (status `STOPPED`); offline/computer set local state only.
+- `components/TTTWinnerModal.tsx`: confetti winner screen (shares `components/Confetti.tsx` with Stop's `WinnerModal`), winner trophy/avatar/name, wins chip, **Play again** (`handleRematch` → `handleReset`, stays in the room) and **Close** (dismiss-only). Losers see the same modal via `player_wins`. A **draw** shows only the inline "Draw!" text — no modal. Winners never auto-leave the room.
+- `handleReset`: resets to `CREATED`, `round + 1`, random `currentPlayer`, empty board — everyone stays in the room and can keep playing. The restart button is shown for `online` and `join` (not just host) once there's a result.
+- `useFriends(isHostLobby ? myUid : null)` — the friends list is fetched only while hosting an open lobby (for the invite section).
+- Players sheet: rows sorted by wins descending; tapping an opponent row opens `PlayerInfoSheet` with `statValue = wins` / `statLabel = t("wins")`.
+
 ## Gotchas
 
 - The `functions/` directory uses **npm** (has `package-lock.json`), while the root uses **pnpm**. Don't mix them.
 - `tests/e2e/` also uses **npm**, not pnpm.
 - `react-hooks/exhaustive-deps` is intentionally disabled — don't re-enable it.
 - Hardcoded user UID bypass for email verification at `app/_layout.tsx:131` — this is intentional for a specific admin account.
+- `react-native-app-intro-slider`'s default pagination internally uses RN's **deprecated** `SafeAreaView` (triggers the dev "SafeAreaView has been deprecated" warning). `components/Onboarding.tsx` must keep its custom `renderPagination` (plain `View`/`Pressable` wiring via `sliderRef`); the library's `_renderPagination()` remains as dead code in the bundle but is never invoked. Verify with `npx expo export:embed --platform android --dev true --entry-file node_modules/expo-router/entry.js --bundle-output <file> --assets-dest <dir>`.

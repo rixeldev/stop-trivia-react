@@ -34,6 +34,7 @@ export default {
       minSdkVersion: 24,
       ndkVersion: "29.0.14206865",
       softwareKeyboardLayoutMode: "pan",
+      enableProguardInReleaseBuilds: true,
     },
     web: {
       favicon: "./assets/icons/ic_brand.png",

@@ -51,7 +51,7 @@ export function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
         setVibrationEnabled(parseBoolean(vibrationValue))
       }
       loadSettings()
-    }, [])
+    }, []),
   )
 
   const onTabbarLayout = (e: LayoutChangeEvent) => {
@@ -150,8 +150,9 @@ export function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
 
       <View
         style={{
-          opacity: isAdLoaded ? 1 : 0,
           alignItems: "center",
+          backgroundColor: Theme.colors.transparent,
+          opacity: isAdLoaded ? 1 : 0,
         }}
       >
         <BannerAd
